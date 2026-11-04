@@ -480,3 +480,73 @@ def test_recomendador_salvo_reproduz_a_lista(tmp_path):
     joblib.dump(modelo, caminho)
     carregado = joblib.load(caminho)
     pd.testing.assert_frame_equal(carregado.recomendar("ana"), modelo.recomendar("ana"))
+
+
+def _cadastros(**colunas):
+    return pd.DataFrame(colunas)
+
+
+def test_componentes_de_cadastros_seguem_a_lista_individual():
+    modelo = _modelo(pesos_usuario_novo=(0.2, 0.3, 0.4, 0.1))
+    candidatos = np.array(["pizza1", "pizza2", "cafe1", "cafe2", "longe"])
+    cadastros = _cadastros(cidade=["Z", None], categorias=[["Cafe"], None], local_exemplo=[None, "pizza1"])
+    lote = pontuar(modelo.componentes_cadastros(cadastros, candidatos), modelo.pesos_usuario_novo)
+    for i, (cidade, categorias, exemplo) in enumerate([("Z", ["Cafe"], None), (None, None, "pizza1")]):
+        tabela = modelo.recomendar_usuario_novo(cidade=cidade, categorias=categorias, local_exemplo=exemplo, n=10)
+        esperado = dict(zip(candidatos, lote[i]))
+        for gmap_id, pontuacao in zip(tabela["gmap_id"], tabela["pontuacao"]):
+            assert pontuacao == pytest.approx(esperado[gmap_id])
+
+
+def test_cadastro_sem_nada_tem_conteudo_neutro_e_local_zero():
+    modelo = _modelo()
+    componentes = modelo.componentes_cadastros(_cadastros(cidade=[None]), ["pizza1", "cafe1"])
+    assert np.allclose(componentes["conteudo"], 0.5)
+    assert np.allclose(componentes["local"], 0)
+
+
+def test_categoria_declarada_e_local_de_exemplo_somam_no_vetor():
+    modelo = _modelo()
+    candidatos = ["pizza2", "cafe2"]
+    so_categoria = modelo.componentes_cadastros(_cadastros(categorias=[["Cafe"]]), candidatos)["conteudo"][0]
+    so_exemplo = modelo.componentes_cadastros(_cadastros(local_exemplo=["pizza1"]), candidatos)["conteudo"][0]
+    os_dois = modelo.componentes_cadastros(_cadastros(categorias=[["Cafe"]], local_exemplo=["pizza1"]), candidatos)["conteudo"][0]
+    assert so_categoria[1] > so_categoria[0]
+    assert so_exemplo[0] > so_exemplo[1]
+    # Os dois juntos ficam entre os extremos de cada um.
+    assert so_categoria[0] < os_dois[0] < so_exemplo[0]
+
+
+def test_local_de_exemplo_desconhecido_gera_erro():
+    with pytest.raises(ValueError):
+        _modelo().componentes_cadastros(_cadastros(local_exemplo=["inexistente"]), ["pizza1"])
+
+
+def test_coincidencia_de_categorias():
+    modelo = _modelo()
+    matriz = modelo.coincidencia_de_categorias(_cadastros(categorias=[["Cafe"], [], None]), ["pizza1", "cafe1", "longe"])
+    assert matriz.tolist() == [[0, 1, 1], [0, 0, 0], [0, 0, 0]]
+
+
+def test_filtro_de_categorias_poe_as_declaradas_primeiro_e_completa_a_lista():
+    modelo = _modelo(pesos_usuario_novo=(0.0, 0.0, 0.0, 1.0))
+    tabela = modelo.recomendar_usuario_novo(categorias=["Pizza restaurant"], n=4, filtrar_categorias=True)
+    assert len(tabela) == 4
+    assert set(tabela["gmap_id"].iloc[:2]) == {"pizza1", "pizza2"}
+    assert any("categorias" in aviso for aviso in tabela.attrs["avisos"])
+
+
+def test_filtro_de_preco_e_ignorado_se_sobrar_pouco():
+    locais = _locais_modelo().assign(preco_nivel=[1.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    modelo = Recomendador(percentil=50, centro="fixo", local="cidade").ajustar(_treino_modelo(), locais)
+    filtrada = modelo.recomendar_usuario_novo(preco=1, n=2)
+    assert "pizza2" not in set(filtrada["gmap_id"]) and filtrada.attrs["avisos"] == []
+    ignorado = modelo.recomendar_usuario_novo(preco=2, n=2)
+    assert len(ignorado) == 2
+    assert any("preço" in aviso for aviso in ignorado.attrs["avisos"])
+
+
+def test_cidade_com_poucos_locais_avisa_e_nao_esvazia():
+    tabela = _modelo().recomendar_usuario_novo(cidade="Z", n=3)
+    assert len(tabela) == 3
+    assert any("ampliada" in aviso for aviso in tabela.attrs["avisos"])

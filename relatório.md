@@ -658,6 +658,53 @@ O dicionário em `src/traducoes.py` traduz os tokens para português (`misc=serv
 - **A lista é pouco pessoal:** um usuário de exemplo, de Cheyenne, recebe sobretudo os locais populares e bem avaliados da cidade, como Texas Roadhouse e Chick-fil-A. Isso é coerente com a ablação.
 - **A explicação é uma justificativa, não a causa:** "porque você gostou de X" aponta o local mais parecido, mas o que mais pesa na posição é o local e a popularidade. Por isso, a interface deve mostrar também as barras dos componentes.
 
+### 4.5 Cenário 2: usuário novo
+
+**Protocolo:** usuários sem avaliações no treino e com 2 ou mais avaliações na validação. Em ordem de data, a primeira avaliação simula o cadastro e as demais são o alvo. O cadastro informa a cidade do local avaliado e, conforme o método, a categoria principal dele ou o próprio local, como exemplo. Esse local sai da lista e do alvo. Os demais critérios são os do protocolo único (seção 4.1). A função `simular_cadastros`, em `src/divisao.py`, monta os cadastros.
+
+| Etapa | Usuários |
+|---|---|
+| Novos na validação | 45.530 |
+| Com 2 ou mais avaliações | 12.037 |
+| No protocolo (sorteados entre os que convertem depois do cadastro) | 10.000 |
+| Com AUC de gosto (notas boas e ruins depois do cadastro) | 2.254 |
+
+O alvo tem 28.428 avaliações. Em média, 55,6% delas ficam na cidade do cadastro, e só 18,8% têm a categoria declarada (12,1% entre todos os candidatos). Dos locais de exemplo, 2,3% são locais novos, fora do treino.
+
+**Métodos:** o local declarado é a proximidade ao centro da cidade informada, `exp(−km / τ)` com τ = 200 km, como no cenário 1. Os pesos dos métodos 3 e 4 saíram de uma grade com passo de 0,1, pelo critério do cenário 1, sem exigir conteúdo: escore + popularidade ficou com 0,3 / 0,7, e o método 4, com 0 / 0,2 / 0,5 / 0,3 (conteúdo / escore / local / popularidade). Nos métodos 5 e 6, o conteúdo entra com peso `α`, e os demais pesos do método 4 são multiplicados por `1 − α`. Como filtro, os locais da categoria declarada vêm primeiro e os demais completam a lista.
+
+| Método | Conversão@10 | AUC de gosto | Cobertura do catálogo | Conversão − método 4 (IC 95%) | Gosto − método 4 (IC 95%) |
+|---|---|---|---|---|---|
+| 1. Popularidade | 0,0129 | 0,4946 | 0,8% | −0,0355 (−0,0369 a −0,0341) | −0,0593 (−0,0749 a −0,0442) |
+| 2. Escore | 0,0022 | 0,6905 | 0,8% | −0,0462 (−0,0477 a −0,0447) | 0,1366 (0,1177 a 0,1549) |
+| 3. Escore + popularidade | 0,0127 | 0,5560 | 0,8% | −0,0357 (−0,0371 a −0,0343) | empate |
+| **4. Local + escore + popularidade** | **0,0484** | **0,5539** | **27,9%** | — | — |
+| 5. + categorias, α = 0,05 | 0,0484 | 0,5541 | 31,8% | empate | empate |
+| 5. + categorias, α = 0,1 | 0,0478 | 0,5513 | 38,0% | −0,0006 (−0,0011 a −0,0001) | empate |
+| 5. + categorias, α = 0,2 | 0,0474 | 0,5461 | 54,0% | −0,0010 (−0,0018 a −0,0003) | −0,0078 (−0,0154 a −0,0005) |
+| 5. + categorias como filtro | 0,0239 | 0,5039 | 83,8% | −0,0246 (−0,0261 a −0,0229) | −0,0501 (−0,0633 a −0,0374) |
+| 6. + local de exemplo, α = 0,05 | 0,0486 | 0,5524 | 31,6% | empate | empate |
+| 6. + local de exemplo, α = 0,1 | 0,0488 | 0,5502 | 38,1% | empate | empate |
+| 6. + local de exemplo, α = 0,2 | 0,0488 | 0,5351 | 55,4% | empate | −0,0188 (−0,0275 a −0,0103) |
+
+A cobertura do espaço de usuários é de 100% em todos os métodos, inclusive para quem não informa nada. O notebook traz também consumo, AUC de consumo, novidade, serendipidade e diversidade, que servem de acompanhamento.
+
+**Leitura:**
+
+- **A cidade é o que mais ajuda:** o método 4 converte quase quatro vezes mais que a popularidade global.
+- **O escore sozinho tem a maior AUC de gosto e quase não converte:** ordena bem o que a pessoa já escolheu, mas não acerta aonde ela vai.
+- **O conteúdo declarado, com peso baixo, empata com o método 4 e amplia o catálogo.** Com peso 0,2, piora o gosto. Isso repete o que se viu no cenário 1.
+- **Categorias como filtro derrubam a conversão à metade.** Como só 18,8% do que a pessoa avalia depois tem a categoria declarada, o filtro afasta da lista os locais aonde ela iria de fato. A simulação usa a categoria do primeiro local avaliado, e uma pessoa que escolhe categorias num formulário pode querer de fato só aquelas. Essa diferença é uma limitação da medida.
+- **O critério** aponta categorias com α = 0,05, em empate com o método 4 e com o local de exemplo com α = 0,05 ou 0,1.
+
+**Regra de não esvaziar:** em `recomendar_usuario_novo`, preferências e filtros nunca deixam a lista vazia. Os locais das categorias, quando usadas como filtro, vêm primeiro, e os demais completam a lista. O filtro de preço é ignorado se sobrarem menos locais que o pedido. Uma cidade com menos locais que o pedido é ampliada para os mais próximos. Cada caso gera um aviso para a interface.
+
+**Decisão da usuária:** as categorias declaradas entram **com peso de 0,05**, e não como filtro. O peso vale para todo o conteúdo declarado (categorias, atributos e local de exemplo), e os demais são os do método 4 multiplicados por 0,95.
+
+**Congelado para o cenário 2:** pesos 0,05 / 0,19 / 0,475 / 0,285 (conteúdo / escore / local / popularidade), gravados em `modelos/cenario2.json` e usados por padrão na classe. Na validação: **conversão@10 de 0,0484 (IC 95% de 0,0469 a 0,0499) e AUC de gosto de 0,5541 (IC 95% de 0,5384 a 0,5696)**, esta medida em 2.254 usuários.
+
+**Limitação:** com esse peso, a categoria declarada quase não muda a lista. Um usuário de exemplo que informa Cheyenne e restaurante chinês recebe só um restaurante chinês, em 8º, e o resto são os locais populares e bem avaliados da cidade. O que a pessoa declara desempata e amplia o catálogo, sem custar conversão.
+
 ## 5. Avaliação final
 
 *A preencher na Fase 4.*

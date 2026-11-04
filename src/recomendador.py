@@ -14,6 +14,8 @@ CENTRO_PADRAO = 3
 PERCENTIL_PADRAO = 50
 REGULARIZACAO_VIES = 10
 PESOS_CONGELADOS = (0.1, 0.2, 0.5, 0.2)
+# Cenário 2: os pesos do método 4 (0 / 0,2 / 0,5 / 0,3) com o conteúdo declarado a 0,05 e o resto × 0,95.
+PESOS_USUARIO_NOVO = (0.05, 0.19, 0.475, 0.285)
 
 
 def _media_bayesiana(avaliacoes, medias, m, prior):
@@ -221,6 +223,21 @@ def prever_nota(usuarios, gmap_ids, escores, vies_usuario):
     return previsao.clip(1, 5).to_numpy()
 
 
+def _coluna(tabela, nome):
+    """Valores de uma coluna opcional, ou `None` em todas as linhas se ela não existir."""
+    return list(tabela[nome]) if nome in tabela.columns else [None] * len(tabela)
+
+
+def _locais(quantidade):
+    return f"{quantidade} local" if quantidade == 1 else f"{quantidade} locais"
+
+
+def _lista_de_textos(valores):
+    if isinstance(valores, (list, tuple, np.ndarray)):
+        return [valor for valor in valores if isinstance(valor, str)]
+    return []
+
+
 def _km_ate_ponto(latitude, longitude, latitudes, longitudes):
     """Distância de haversine de um ponto até vários pontos."""
     lat1, lon1 = np.radians(latitude), np.radians(longitude)
@@ -233,7 +250,9 @@ class Recomendador:
     """Modelo de conteúdo e escores de produto, com os três cenários do trabalho.
 
     Os pesos seguem a ordem (conteúdo, escore, local, popularidade). `pesos_usuario_novo` e
-    `pesos_local_novo` (conteúdo, local) são definidos nas seções 3.5 e 3.6 do planejamento.
+    `pesos_local_novo` (conteúdo, local) vêm das seções 3.5 e 3.6 do planejamento; o de local novo
+    ainda é provisório. No usuário novo, o peso do conteúdo vale para tudo o que é declarado:
+    categorias, atributos e local de exemplo.
     """
 
     def __init__(
@@ -244,7 +263,7 @@ class Recomendador:
         local="distancia",
         tau=200,
         opcoes_vetor=None,
-        pesos_usuario_novo=PESOS_CONGELADOS,
+        pesos_usuario_novo=PESOS_USUARIO_NOVO,
         pesos_local_novo=(0.1, 0.5),
     ):
         if local not in {"cidade", "distancia", "media"}:
@@ -419,39 +438,115 @@ class Recomendador:
             return na_cidade
         return proximidade if self.local == "distancia" else (na_cidade + proximidade) / 2
 
-    def _vetor_declarado(self, categorias, atributos, local_exemplo):
-        partes = []
-        if categorias or atributos:
-            partes.append(self.vetorizador.transform([{"category": categorias or [], "MISC": atributos or {}}]))
-        if local_exemplo is not None:
-            partes.append(self.matriz[self._posicao_local[local_exemplo]])
-        if not partes:
-            return None
-        return normalize(sum(partes), norm="l2")
+    def _vetores_declarados(self, cadastros):
+        """Vetor de conteúdo de cada cadastro: categorias e atributos declarados mais o local de exemplo.
 
-    def recomendar_usuario_novo(self, cidade=None, categorias=None, atributos=None, local_exemplo=None, n=10):
-        """Lista para quem não tem histórico, com o que a pessoa informar; tudo é opcional."""
-        candidatos = np.array([gmap_id for gmap_id in self.candidatos_padrao if gmap_id != local_exemplo])
+        As partes são somadas e normalizadas; cadastro sem nada declarado fica com vetor nulo, que dá a
+        similaridade neutra de 0,5.
+        """
+        categorias, atributos = _coluna(cadastros, "categorias"), _coluna(cadastros, "atributos")
+        declarados = [
+            {"category": categoria, "MISC": atributo if isinstance(atributo, dict) else {}}
+            for categoria, atributo in zip(categorias, atributos)
+        ]
+        vetores = self.vetorizador.transform(declarados)
+        exemplos = _coluna(cadastros, "local_exemplo")
+        com_exemplo = [i for i, exemplo in enumerate(exemplos) if isinstance(exemplo, str)]
+        if com_exemplo:
+            desconhecidos = {exemplos[i] for i in com_exemplo} - set(self._posicao_local.index)
+            if desconhecidos:
+                raise ValueError(f"Local de exemplo desconhecido: {sorted(desconhecidos)[0]}")
+            linhas = self._posicao_local.reindex([exemplos[i] for i in com_exemplo]).to_numpy()
+            seletor = sparse.csr_matrix(
+                (np.ones(len(com_exemplo)), (com_exemplo, linhas)), shape=(len(declarados), len(self.locais))
+            )
+            vetores = vetores + seletor @ self.matriz
+        return normalize(sparse.csr_matrix(vetores), norm="l2")
+
+    def _afinidades_declaradas(self, cidades, candidatos):
+        """Local de cada cadastro pela cidade informada; sem cidade, 0."""
+        resultado = np.zeros((len(cidades), len(candidatos)))
+        por_cidade = {}
+        for i, cidade in enumerate(cidades):
+            if isinstance(cidade, str):
+                por_cidade.setdefault(cidade, []).append(i)
+        for cidade, linhas in por_cidade.items():
+            resultado[linhas] = self._afinidade_declarada(cidade, candidatos)
+        return resultado
+
+    def componentes_cadastros(self, cadastros, candidatos):
+        """Os quatro componentes, em lote, para quem não tem histórico, com o que cada cadastro informa.
+
+        `cadastros` tem uma linha por pessoa e, todas opcionais, as colunas `cidade`, `categorias`
+        (lista), `atributos` (grupo -> lista de valores) e `local_exemplo` (`gmap_id`).
+        """
+        candidatos = np.asarray(candidatos).astype(str)
         colunas = self._posicao_local.reindex(candidatos).to_numpy()
-        vetor = self._vetor_declarado(categorias, atributos, local_exemplo)
-        conteudo = np.full(len(candidatos), 0.5)
-        if vetor is not None:
-            conteudo = similaridade_conteudo(vetor, self.matriz[colunas])[0]
-        por_candidato = {
-            "conteudo": conteudo,
+        return {
+            "conteudo": similaridade_conteudo(self._vetores_declarados(cadastros), self.matriz[colunas]),
             "escore": self.escores["escore_normalizado"].reindex(candidatos).to_numpy(),
-            "local": self._afinidade_declarada(cidade, candidatos),
+            "local": self._afinidades_declaradas(_coluna(cadastros, "cidade"), candidatos),
             "popularidade": self.escores["popularidade"].reindex(candidatos).to_numpy(),
         }
-        alfa, beta, gama, delta = self.pesos_usuario_novo
-        pontuacoes = (
-            alfa * por_candidato["conteudo"]
-            + beta * por_candidato["escore"]
-            + gama * por_candidato["local"]
-            + delta * por_candidato["popularidade"]
+
+    def coincidencia_de_categorias(self, cadastros, candidatos):
+        """Matriz cadastros × candidatos com 1 onde o candidato tem alguma das categorias declaradas."""
+        linhas = self._posicao_local.reindex(np.asarray(candidatos).astype(str)).to_numpy()
+        do_candidato = [set(_lista_de_textos(valor)) for valor in self.locais["category"].to_numpy()[linhas]]
+        declaradas = [set(_lista_de_textos(valor)) for valor in _coluna(cadastros, "categorias")]
+        vocabulario = {categoria: i for i, categoria in enumerate(sorted(set().union(*do_candidato, *declaradas)))}
+
+        def incidencia(conjuntos):
+            pares = [(i, vocabulario[categoria]) for i, conjunto in enumerate(conjuntos) for categoria in conjunto]
+            linhas_, colunas_ = zip(*pares) if pares else ((), ())
+            return sparse.csr_matrix((np.ones(len(pares)), (linhas_, colunas_)), shape=(len(conjuntos), len(vocabulario)))
+
+        return (np.asarray((incidencia(declaradas) @ incidencia(do_candidato).T).todense()) > 0).astype(float)
+
+    def recomendar_usuario_novo(
+        self, cidade=None, categorias=None, atributos=None, local_exemplo=None, preco=None, n=10, filtrar_categorias=False
+    ):
+        """Lista para quem não tem histórico, com o que a pessoa informar; tudo é opcional.
+
+        Regra de não esvaziar: preferências e filtros nunca deixam a lista vazia. Com `filtrar_categorias`,
+        os locais das categorias declaradas vêm primeiro e os demais completam a lista. O filtro de preço
+        (nível de 1 a 4) é ignorado se sobrarem menos locais que o pedido. Os avisos ficam em
+        `tabela.attrs["avisos"]`.
+        """
+        avisos = []
+        candidatos = np.array([gmap_id for gmap_id in self.candidatos_padrao if gmap_id != local_exemplo])
+        if preco is not None:
+            niveis = self.locais["preco_nivel"].to_numpy()[self._posicao_local.reindex(candidatos).to_numpy()]
+            com_preco = niveis == preco
+            if com_preco.sum() >= n:
+                candidatos = candidatos[com_preco]
+            else:
+                avisos.append(f"Há só {_locais(int(com_preco.sum()))} com esse preço; o filtro de preço foi ignorado.")
+        cadastro = pd.DataFrame(
+            {"cidade": [cidade], "categorias": [categorias], "atributos": [atributos], "local_exemplo": [local_exemplo]}
         )
-        ordem = np.argsort(-pontuacoes, kind="stable")[:n]
-        return self._tabela_de_lista(candidatos, ordem, pontuacoes, por_candidato)
+        componentes = self.componentes_cadastros(cadastro, candidatos)
+        pontuacoes = pontuar(componentes, self.pesos_usuario_novo)[0]
+        chave = pontuacoes
+        if filtrar_categorias and categorias:
+            coincide = self.coincidencia_de_categorias(cadastro, candidatos)[0]
+            chave = pontuacoes + coincide
+            if coincide.sum() < n:
+                avisos.append(f"Há só {_locais(int(coincide.sum()))} das categorias escolhidas; a lista foi completada com outros.")
+        if cidade is not None:
+            na_cidade = int((self.locais["cidade"].to_numpy()[self._posicao_local.reindex(candidatos).to_numpy()] == cidade).sum())
+            if na_cidade < n:
+                avisos.append(f"{cidade} tem só {_locais(na_cidade)} disponíveis; a lista foi ampliada para os mais próximos.")
+        por_candidato = {
+            "conteudo": componentes["conteudo"][0],
+            "escore": componentes["escore"],
+            "local": componentes["local"][0],
+            "popularidade": componentes["popularidade"],
+        }
+        ordem = np.argsort(-chave, kind="stable")[:n]
+        tabela = self._tabela_de_lista(candidatos, ordem, pontuacoes, por_candidato)
+        tabela.attrs["avisos"] = avisos
+        return tabela
 
     def _ponto_do_cadastro(self, cadastro):
         latitude, longitude = cadastro.get("latitude"), cadastro.get("longitude")

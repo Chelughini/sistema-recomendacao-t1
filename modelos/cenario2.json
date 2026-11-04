@@ -1,0 +1,10 @@
+{
+  "pesos": {
+    "alfa": 0.05,
+    "beta": 0.19,
+    "gama": 0.475,
+    "delta": 0.285
+  },
+  "categorias": "peso",
+  "local": "proximidade ao centro da cidade informada, com o τ do cenário 1"
+}

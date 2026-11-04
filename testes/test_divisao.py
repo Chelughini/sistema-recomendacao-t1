@@ -8,6 +8,7 @@ from src.divisao import (
     montar_conjuntos,
     retirar_locais,
     segmentar,
+    simular_cadastros,
     sortear_locais_simulados,
 )
 
@@ -176,3 +177,44 @@ def test_conjuntos_reproduziveis():
     _, primeiro = _conjuntos_pequenos()
     _, segundo = _conjuntos_pequenos()
     pd.testing.assert_frame_equal(primeiro["locais_novos"], segundo["locais_novos"])
+
+
+def _alvo_usuario_novo():
+    linhas = [
+        ("u1", "b", 5, "2019-05-02", "novo"),
+        ("u1", "a", 4, "2019-05-01", "novo"),
+        ("u1", "c", 2, "2019-06-01", "novo"),
+        ("u2", "a", 5, "2019-05-01", "novo"),
+        ("u3", "c", 5, "2019-05-01", "novo"),
+        ("u3", "b", 3, "2019-05-01", "novo"),
+        ("u4", "a", 5, "2019-05-01", "antigo"),
+        ("u4", "b", 5, "2019-05-02", "antigo"),
+    ]
+    alvo = pd.DataFrame(linhas, columns=["user_id", "gmap_id", "rating", "data", "segmento"])
+    return alvo.assign(data=pd.to_datetime(alvo["data"]))
+
+
+def _locais_cadastro():
+    return pd.DataFrame(
+        {"gmap_id": ["a", "b", "c"], "cidade": ["X", "Y", None], "categoria_principal": ["Cafe", "Bar", "Pizza restaurant"]}
+    )
+
+
+def test_cadastro_simulado_e_a_primeira_avaliacao_de_quem_tem_duas_ou_mais():
+    cadastros, pares = simular_cadastros(_alvo_usuario_novo(), _locais_cadastro())
+    # u2 tem só uma avaliação; u4 não é novo.
+    assert sorted(cadastros.index) == ["u1", "u3"]
+    assert cadastros.loc["u1", "local_exemplo"] == "a"
+    assert cadastros.loc["u1", "cidade"] == "X"
+    assert cadastros.loc["u1", "categorias"] == ["Cafe"]
+    assert sorted(map(tuple, pares.to_numpy())) == [("u1", "a"), ("u3", "b")]
+
+
+def test_cadastro_simulado_desempata_a_data_pelo_local_e_aceita_local_sem_cidade():
+    cadastros, _ = simular_cadastros(_alvo_usuario_novo(), _locais_cadastro())
+    # u3 avaliou b e c no mesmo dia: fica b, o primeiro em ordem de gmap_id.
+    assert cadastros.loc["u3", "local_exemplo"] == "b"
+    alvo = _alvo_usuario_novo()
+    alvo.loc[alvo["user_id"] == "u3", "gmap_id"] = ["c", "c"]
+    cadastros, _ = simular_cadastros(alvo, _locais_cadastro())
+    assert not isinstance(cadastros.loc["u3", "cidade"], str)

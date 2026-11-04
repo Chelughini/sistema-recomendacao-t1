@@ -58,6 +58,26 @@ def retirar_locais(treino, gmap_ids):
     return treino[~treino["gmap_id"].isin(gmap_ids)]
 
 
+def simular_cadastros(alvo, locais, segmento="novo", coluna_segmento="segmento", minimo_avaliacoes=2):
+    """Simula o cadastro dos usuários novos: a primeira avaliação no período-alvo vira o que a pessoa informa.
+
+    Ficam os usuários do segmento com `minimo_avaliacoes` ou mais avaliações no alvo. Em ordem de data
+    (e de `gmap_id`, para desempatar), a primeira dá a cidade, a categoria principal e o local de exemplo;
+    as demais são o que se tenta acertar. Devolve um cadastro por usuário, indexado por `user_id`, e os
+    pares (user_id, gmap_id) do cadastro, que saem do alvo e da lista.
+    """
+    do_segmento = alvo[alvo[coluna_segmento] == segmento]
+    contagem = do_segmento.groupby("user_id").size()
+    elegiveis = do_segmento[do_segmento["user_id"].isin(contagem.index[contagem >= minimo_avaliacoes])]
+    primeiras = elegiveis.sort_values(["user_id", "data", "gmap_id"], kind="stable").drop_duplicates("user_id")
+    dados_do_local = locais.set_index("gmap_id")[["cidade", "categoria_principal"]]
+    cadastros = primeiras[["user_id", "gmap_id"]].join(dados_do_local, on="gmap_id")
+    cadastros = cadastros.rename(columns={"gmap_id": "local_exemplo"})
+    cadastros["categorias"] = [[categoria] if isinstance(categoria, str) else [] for categoria in cadastros["categoria_principal"]]
+    pares = primeiras[["user_id", "gmap_id"]].reset_index(drop=True)
+    return cadastros.drop(columns="categoria_principal").set_index("user_id"), pares
+
+
 def montar_conjuntos(avaliacoes, locais, quantidade=100, minimo_avaliacoes=20, semente=42):
     """Monta as partições, os treinos do cenário 3, os segmentos e a lista de locais novos."""
     particoes = dividir_temporal(avaliacoes)
