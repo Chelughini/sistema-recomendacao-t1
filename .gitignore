@@ -1,0 +1,12 @@
+# Dados brutos: review-Wyoming.json passa do limite de 100 MB por arquivo do GitHub.
+meta-Wyoming.json
+review-Wyoming.json
+
+# Dados tratados: têm identificadores de usuários e comentários, e os notebooks os regeneram.
+data/
+
+# Arquivos gerados pelo Python e pelas ferramentas
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
