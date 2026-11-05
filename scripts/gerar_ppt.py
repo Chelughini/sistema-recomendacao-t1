@@ -439,6 +439,8 @@ def base(p):
                  "Fast food: 74.061 avaliações e nota 3,72 · Cafe: a maior nota, 4,45", "A nota varia por categoria, o que abre espaço para usar a qualidade do local como sinal.")
     slide_figura(p, "Cidades em ilhas", "As pessoas avaliam sobretudo na própria cidade", GRAFICOS / "base_mapa.png",
                  "75% das avaliações de uma pessoa ficam na cidade principal dela", "Os locais formam aglomerados isolados, com grandes vazios entre as cidades: a localização deve pesar na recomendação.")
+    slide_figura(p, "Avaliações por mês", "Julho tem 2 vezes o movimento de fevereiro", GRAFICOS / "base_por_mes.png", None,
+                 "De 2017 a 2019; 3,29 vezes nas cidades turísticas. Por isso a validação cobre um ano inteiro.")
 
 
 # ---------------------------------------------------------------- 3. Teoria
@@ -531,6 +533,9 @@ def teoria(p):
         texto(s, x + 0.45, TOPO_CARTAO + 2.0, largura - 0.9, 1.4, escore, tamanho=72, cor=cor, fonte=FONTE_TITULO, negrito=True, espaco=0)
     texto(s, MARGEM, BASE_CARTAO - 0.7, LARGURA - 2 * MARGEM, 0.6, "Com poucas avaliações, o escore fica perto da média geral (4,13)", tamanho=22, cor=TERRACOTA, negrito=True, alinhar=PP_ALIGN.CENTER, espaco=0)
     notas(s, "É a média bayesiana: escore = (v · média do local + m · 4,13) / (v + m), com m = 36,8 avaliações. Sem isso, um local com duas notas 5 passaria à frente de um com 400 avaliações e média 4,7.")
+
+    slide_figura(p, "Escore bayesiano na base", "Com poucas avaliações, o escore fica perto da média geral", GRAFICOS / "teoria_escore.png", None,
+                 "Cada ponto é um local: a média simples das notas contra o escore. Os locais com poucas avaliações (cores claras) ficam perto da média geral, 4,13; os com muitas, perto da diagonal.")
 
     slide_tabela(p, "Passo 4: perto e conhecido", "A localização cai com a distância; a popularidade cresce devagar", [
         ["Distância até onde a pessoa avalia", "Localização", "Avaliações do local", "Popularidade"],
@@ -637,6 +642,20 @@ def estimacao(p):
     slide_figura(p, "O papel de cada componente", "A localização traz a pessoa; o escore acerta o gosto", GRAFICOS / "estimacao_ablacao.png",
                  "Sem o escore, o gosto cai para 0,485; sem o conteúdo, empata",
                  "Ablação: tirar ou usar só um componente. Nenhum sozinho passa de 0,0415 de conversão. Sem o conteúdo, as métricas empatam: no cenário 1 ele amplia o catálogo.")
+    slide_tabela(p, "Pesos do usuário novo", "Na validação, a cidade é o que mais ajuda; a categoria entra com peso baixo", [
+        ["Método", "Conversão@10", "AUC de gosto"],
+        ["Popularidade global", "0,0129", "0,4946"],
+        ["Cidade + escore + popularidade", "0,0484", "0,5539"],
+        ["+ categorias, peso 0,05 (escolhido)", "0,0484", "0,5541"],
+        ["+ categorias como filtro", "0,0239", "0,5039"],
+    ], [0.5, 0.25, 0.25], "Como filtro, as categorias derrubam a conversão: só 18,8% do que a pessoa avalia depois tem a categoria declarada.", destacar=3)
+    slide_tabela(p, "Pesos do local novo", "Na validação, o perfil centrado em 3 fez o conteúdo ajudar", [
+        ["Pontuação", "AUC de consumo"],
+        ["Aleatória", "0,4994"],
+        ["Só localização", "0,9195"],
+        ["Conteúdo + localização, meio a meio (escolhida)", "0,9314"],
+        ["Só conteúdo", "0,6351"],
+    ], [0.7, 0.3], "Com o perfil centrado na média do usuário, o conteúdo sozinho ficava em 0,51. Centrado em 3, ele descreve o tipo de lugar que a pessoa frequenta. No teste, esse ganho não se confirmou.", destacar=3)
 
 
 # ---------------------------------------------------------------- 7. Performance
@@ -664,6 +683,13 @@ def performance(p):
     slide_figura(p, "Local novo", "Quem vai ao local novo fica bem acima dos demais", GRAFICOS / "performance_local_novo.png",
                  "AUC de consumo de 0,92 · o ganho do conteúdo sobre a localização não se confirmou",
                  "Nos 100 locais reais: 0,9209 contra 0,9173 só com a localização, empate. Nos simulados, +0,0044. A cota de 1 local novo leva de 21 para 126 as listas que acertam um local novo, com −0,0014 de conversão. O conteúdo pontua 100% dos locais novos; vizinhos e grafos, 0%.")
+    slide_figura(p, "Curvas ROC no teste", "Gosto no usuário antigo e consumo nos locais novos", GRAFICOS / "performance_roc.png", None,
+                 "A curva de gosto tem degraus porque a maioria dos usuários tem um ou dois locais bons e ruins no teste.")
+    slide_numeros(p, "Previsão de nota", "O escore mais o viés do usuário tem o menor erro", [
+        ("1,025", "RMSE com escore + viés", TERRACOTA),
+        ("1,084", "RMSE só com o escore", SALVIA),
+        ("1,134", "RMSE com a média global", TEXTO),
+    ], "Em 21.121 avaliações do teste; MAE de 0,775. O erro de cerca de 1 ponto mostra o pouco espaço para personalizar a nota: por isso o modelo ordena, e a nota prevista entra na interface só como informação.")
 
 
 # ---------------------------------------------------------------- 8. Interface
@@ -713,37 +739,12 @@ def apendice(p):
     ], "Vizinhos por usuário têm pouquíssima sobreposição; o local explica parte da nota (escore); as pessoas ficam na própria cidade (localização).")
     slide_figura(p, "Vizinhos por conteúdo", "Os 5 locais mais parecidos são do mesmo tipo", GRAFICOS / "teoria_vizinhos.png", None,
                  "Os vizinhos de uma pizzaria, de um café e de um bar, pelo cosseno. O cosseno mede o tipo de lugar, não a qualidade.")
-    slide_figura(p, "Escore bayesiano na base", "Com poucas avaliações, o escore fica perto da média geral", GRAFICOS / "teoria_escore.png", None,
-                 "Cada ponto é um local: a média simples das notas contra o escore. Os locais com poucas avaliações (cores claras) ficam perto da média geral, 4,13; os com muitas, perto da diagonal.")
     slide_figura(p, "Avaliações por ano", "A pandemia corta a série em 2020", GRAFICOS / "base_por_ano.png", None,
                  "As avaliações caem de 9.357 em fevereiro de 2020 para 906 em abril, e a coleta rareia em 2021.")
-    slide_figura(p, "Avaliações por mês", "Julho tem 2 vezes o movimento de fevereiro", GRAFICOS / "base_por_mes.png", None,
-                 "De 2017 a 2019; 3,29 vezes nas cidades turísticas. Por isso a validação cobre um ano inteiro.")
-    slide_figura(p, "Curvas ROC no teste", "Gosto no usuário antigo e consumo nos locais novos", GRAFICOS / "performance_roc.png", None,
-                 "A curva de gosto tem degraus porque a maioria dos usuários tem um ou dois locais bons e ruins no teste.")
-    slide_numeros(p, "Previsão de nota", "O escore mais o viés do usuário tem o menor erro", [
-        ("1,025", "RMSE com escore + viés", TERRACOTA),
-        ("1,084", "RMSE só com o escore", SALVIA),
-        ("1,134", "RMSE com a média global", TEXTO),
-    ], "Em 21.121 avaliações do teste; MAE de 0,775. O erro de cerca de 1 ponto mostra o pouco espaço para personalizar a nota: por isso o modelo ordena, e a nota prevista entra na interface só como informação.")
     slide_numeros(p, "Estabilidade", "A conversão cai à metade depois do 1º ano do teste", [
         ("0,050", "conversão no 1º ano do teste", TERRACOTA),
         ("0,024", "conversão depois do 1º ano", SALVIA),
     ], "A queda atinge todas as ordenações e acompanha a pandemia e a coleta rarefeita no fim da base. Da validação ao teste, a conversão do cenário 1 cai de 0,0739 para 0,0520.", colunas=2)
-    slide_tabela(p, "Usuário novo na validação", "A cidade é o que mais ajuda; a categoria entra com peso baixo", [
-        ["Método", "Conversão@10", "AUC de gosto"],
-        ["Popularidade global", "0,0129", "0,4946"],
-        ["Cidade + escore + popularidade", "0,0484", "0,5539"],
-        ["+ categorias, peso 0,05 (escolhido)", "0,0484", "0,5541"],
-        ["+ categorias como filtro", "0,0239", "0,5039"],
-    ], [0.5, 0.25, 0.25], "Como filtro, as categorias derrubam a conversão: só 18,8% do que a pessoa avalia depois tem a categoria declarada.", destacar=3)
-    slide_tabela(p, "Local novo na validação", "O perfil centrado em 3 fez o conteúdo ajudar", [
-        ["Pontuação", "AUC de consumo"],
-        ["Aleatória", "0,4994"],
-        ["Só localização", "0,9195"],
-        ["Conteúdo + localização, meio a meio (escolhida)", "0,9314"],
-        ["Só conteúdo", "0,6351"],
-    ], [0.7, 0.3], "Com o perfil centrado na média do usuário, o conteúdo sozinho ficava em 0,51. Centrado em 3, ele descreve o tipo de lugar que a pessoa frequenta. No teste, esse ganho não se confirmou.", destacar=3)
     for arquivo, titulo in [("inteira_antigo.png", "Tela inteira: usuário antigo"), ("inteira_novo.png", "Tela inteira: usuário novo"), ("inteira_local.png", "Tela inteira: local novo")]:
         slide_figura(p, titulo, None, RECORTES / arquivo, None, "Tela inteira da aba, gerada por scripts/capturar_telas.py.")
 

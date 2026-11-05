@@ -231,3 +231,7 @@ A pedido da usuária, um assunto e um visual por slide, com no máximo duas linh
 - **36–40. Interface:** roteiro da demonstração · prateleiras · usuário antigo · usuário novo · local novo.
 - **41.** Conclusões.
 - **Apêndice:** o que os dados mostraram · vizinhos por conteúdo · avaliações por ano e por mês · curvas ROC · previsão de nota · estabilidade · cenários 2 e 3 na validação · telas inteiras.
+
+## Revisão de 2026-11-05: slides do apêndice na apresentação
+
+Seis slides passaram do apêndice para as seções, por cobrirem itens do enunciado: **avaliações por mês** (base, depois de "Cidades em ilhas"), **escore bayesiano na base** (teoria, depois do passo 4), **pesos do usuário novo** e **pesos do local novo** (estimação, depois da ablação), **curvas ROC** e **previsão de nota** (performance, depois de "Local novo"). São 47 slides principais (cerca de 17 segundos cada) e 8 de apêndice: avaliações por ano, o que os dados mostraram, vizinhos por conteúdo, estabilidade e as três telas inteiras.

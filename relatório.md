@@ -1016,15 +1016,15 @@ Os gráficos de estimação e de performance refazem as contas dos notebooks 03 
 |---|---|
 | Capa (a) e roteiro | 1 e 2 |
 | 1 · Descrição do sistema (b) | 3 e 4 |
-| 2 · Base de dados (c) | 5 a 10 |
-| 3 · Conceitos teóricos do modelo (d) | 11 a 23 |
-| 4 · Tratamento dos dados (e) | 24 e 25 |
-| 5 · Treino e teste (f) | 26 e 27 |
-| 6 · Estimação do modelo (g) | 28 a 31 |
-| 7 · Performance do modelo (h) | 32 a 35 |
-| 8 · Interface nos 3 cenários (i) | 36 a 40 |
-| 9 · Conclusões | 41 |
-| Apêndice | 42 a 54 |
+| 2 · Base de dados (c) | 5 a 11 |
+| 3 · Conceitos teóricos do modelo (d) | 12 a 25 |
+| 4 · Tratamento dos dados (e) | 26 e 27 |
+| 5 · Treino e teste (f) | 28 e 29 |
+| 6 · Estimação do modelo (g) | 30 a 35, com os pesos dos três cenários |
+| 7 · Performance do modelo (h) | 36 a 41, com as curvas ROC e a previsão de nota |
+| 8 · Interface nos 3 cenários (i) | 42 a 46 |
+| 9 · Conclusões | 47 |
+| Apêndice | 48 a 55 |
 
 **O método, de forma didática (item d):** a ideia em quatro perguntas (é parecido com o que você gostou? é bom? é perto? muita gente vai?) e cinco passos. (1) O local vira uma lista de características, com um exemplo de três locais e os pesos do TF-IDF (1,08 para Entrega, 7,31 para Loja de pretzel). (2) O usuário vira um perfil, com a conta "nota − média" de uma usuária fictícia e o perfil real do Usuário #12.369. (3) "Parecido" é o cosseno, com os dois candidatos da usuária fictícia calculados no próprio gerador. (4) Os escores, com o efeito da média bayesiana (2 avaliações com média 5 dão 4,18; 400 com média 4,7 dão 4,65) e a queda da localização com a distância. (5) A soma num caso real: para o Usuário #12.369, o The Depot Restaurant soma 0,724 e fica em 1º; o Bar J Chuckwagon Suppers, com o melhor escore da base, fica em 375º de 1.508 porque está longe (localização de 0,26). Um último slide mostra que os três cenários usam a mesma conta.
 
@@ -1032,7 +1032,7 @@ Os gráficos de estimação e de performance refazem as contas dos notebooks 03 
 
 **Conferências:** o validador do arquivo passou; cada slide foi renderizado pelo PowerPoint e revisado; o texto não cita nenhuma métrica fora das vistas em aula; todos os slides têm notas do orador.
 
-**Limitações:** as fontes do modelo (Montserrat e Inter) não estão instaladas, e a base usa Century Gothic e Arial; os integrantes ainda não constam da capa; com 41 slides principais, a fala fica em cerca de 20 segundos por slide para 15 minutos; os slides são curtos de propósito.
+**Limitações:** as fontes do modelo (Montserrat e Inter) não estão instaladas, e a base usa Century Gothic e Arial; os integrantes ainda não constam da capa; com 47 slides principais, a fala fica em cerca de 17 segundos por slide para 15 minutos; os slides são curtos de propósito, e o primeiro a cortar, se faltar tempo, é "Escore bayesiano na base".
 
 ## 8. Entrega
 
@@ -1050,3 +1050,4 @@ Os gráficos de estimação e de performance refazem as contas dos notebooks 03 
 - **2026-11-05:** a seção 7 registra a divisão em slides curtos (um assunto e um visual por slide), a pedido da usuária.
 - **2026-11-05:** a seção 7 registra o código dos gráficos da apresentação (`scripts/graficos_apresentacao.py`) e o tema em `src/tema_apresentacao.py`.
 - **2026-11-05:** a seção 6 registra o tema do app, igual ao da apresentação; as telas `figuras/50_` a `53_` foram capturadas de novo.
+- **2026-11-05:** seis slides passaram do apêndice para a apresentação: avaliações por mês (c), escore bayesiano na base (d), os pesos do usuário novo e do local novo (g), as curvas ROC e a previsão de nota (h).
