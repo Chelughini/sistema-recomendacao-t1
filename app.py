@@ -15,6 +15,7 @@ import pandas as pd
 import streamlit as st
 
 from src.graficos import numero_br
+from src.tema_apresentacao import CORES
 from src.interface import (
     ESTILO_PRATELEIRA,
     cartao_html,
@@ -110,6 +111,12 @@ def pesos_em_texto(pesos):
     return " · ".join(f"{rotulo} {numero_br(pesos[chave], 3).rstrip('0').rstrip(',')}" for chave, rotulo in zip(["alfa", "beta", "gama", "delta"], COMPONENTES.values()))
 
 
+def aviso(texto):
+    """Quadro de informação com borda neutra; o st.info do Streamlit é sempre azul, fora do tema."""
+    with st.container(border=True):
+        st.markdown(texto)
+
+
 recursos = carregar()
 modelo, modelo_c3, numeracao, locais = recursos["modelo"], recursos["modelo_c3"], recursos["numeracao"], recursos["locais"]
 configuracao = recursos["configuracao"]
@@ -135,7 +142,7 @@ with st.sidebar:
 aba_demo, aba_antigo, aba_novo, aba_local = st.tabs(["Demonstração", "Usuário antigo", "Usuário novo", "Local novo"])
 
 # ---------------------------------------------------------------- Demonstração
-AZUL, LARANJA = "#2a78d6", "#eb6834"
+TERRACOTA, SALVIA = CORES["terracota"], CORES["salvia"]  # tema da apresentação
 
 with aba_demo:
     st.subheader("Demonstração: o gosto de um usuário e o que o sistema recomenda")
@@ -175,7 +182,7 @@ with aba_demo:
                     .encode(
                         x=alt.X("peso:Q", title="peso no perfil (direita: gosta mais; esquerda: gosta menos)", axis=alt.Axis(labels=False, ticks=False, grid=False)),
                         y=alt.Y("caracteristica:N", sort=alt.SortField("peso", order="descending"), title=None, axis=alt.Axis(labelLimit=320, labelOverlap=False, labelFontSize=12)),
-                        color=alt.Color("sentido:N", scale=alt.Scale(domain=["gosta mais", "gosta menos"], range=[AZUL, LARANJA]), legend=alt.Legend(title=None, orient="bottom")),
+                        color=alt.Color("sentido:N", scale=alt.Scale(domain=["gosta mais", "gosta menos"], range=[TERRACOTA, SALVIA]), legend=alt.Legend(title=None, orient="bottom")),
                         tooltip=[alt.Tooltip("caracteristica:N", title="Característica"), alt.Tooltip("sentido:N", title="Sentido")],
                     )
                     .properties(height=max(180, 30 * len(pesos)))
@@ -183,14 +190,14 @@ with aba_demo:
                 regua = alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(color="gray", opacity=0.5).encode(x="x:Q")
                 st.altair_chart(barras + regua, width="stretch")
             else:
-                st.info("O perfil é neutro: as notas não diferenciam um tipo de local de outro.")
+                aviso("O perfil é neutro: as notas não diferenciam um tipo de local de outro.")
         with grafico_notas:
             st.markdown("**Notas que deu**")
             contagem = historico["Nota"].value_counts().reindex(range(1, 6), fill_value=0).rename_axis("nota").reset_index(name="avaliações")
             contagem["nota"] = contagem["nota"].map(lambda nota: "★" * nota)
             notas = (
                 alt.Chart(contagem)
-                .mark_bar(cornerRadiusEnd=4, color=AZUL, height=18)
+                .mark_bar(cornerRadiusEnd=4, color=TERRACOTA, height=18)
                 .encode(
                     y=alt.Y("nota:N", sort=["★" * nota for nota in range(5, 0, -1)], title=None),
                     x=alt.X("avaliações:Q", title="avaliações", axis=alt.Axis(tickMinStep=1, format="d")),
@@ -204,9 +211,9 @@ with aba_demo:
         topo = linhas_demo[0]["tabela"]
         mapa, lista_historico = st.columns([3, 2])
         with mapa:
-            st.markdown(f"**Onde avalia** (azul) **e o top {n}** (laranja)")
-            avaliados = locais.loc[modelo.treino.loc[modelo.treino["user_id"] == usuario_demo, "gmap_id"], ["latitude", "longitude"]].assign(cor=AZUL, tamanho=500)
-            recomendados = locais.loc[topo["gmap_id"], ["latitude", "longitude"]].assign(cor=LARANJA, tamanho=350)
+            st.markdown(f"**Onde avalia** (verde) **e o top {n}** (terracota)")
+            avaliados = locais.loc[modelo.treino.loc[modelo.treino["user_id"] == usuario_demo, "gmap_id"], ["latitude", "longitude"]].assign(cor=SALVIA, tamanho=500)
+            recomendados = locais.loc[topo["gmap_id"], ["latitude", "longitude"]].assign(cor=TERRACOTA, tamanho=350)
             pontos = pd.concat([avaliados, recomendados]).dropna(subset=["latitude", "longitude"])
             st.map(pontos, latitude="latitude", longitude="longitude", color="cor", size="tamanho", height=300)
         with lista_historico:
@@ -246,7 +253,7 @@ with aba_antigo:
 
     usuario = numeracao.buscar(texto)
     if not texto.strip():
-        st.info("Digite o número de um usuário ou clique em Sortear.")
+        aviso("Digite o número de um usuário ou clique em Sortear.")
     elif usuario is None:
         st.error(f"Usuário não encontrado: os números vão de 1 a {numero_br(len(numeracao))}.")
     else:
@@ -317,7 +324,7 @@ with aba_novo:
         if usado:
             st.markdown("**Usado na lista:** " + "; ".join(usado) + ".")
         else:
-            st.info("Nada foi informado: a lista segue a qualidade e a popularidade dos locais, sem localização nem gosto.")
+            aviso("Nada foi informado: a lista segue a qualidade e a popularidade dos locais, sem localização nem gosto.")
         lista = modelo.recomendar_usuario_novo(
             cidade=pedido["cidade"],
             categorias=pedido["categorias"],
@@ -372,7 +379,7 @@ with aba_local:
                 }
         cadastro = st.session_state.get("cadastro_local")
         if cadastro is None:
-            st.info("Preencha o cadastro e clique em Cadastrar.")
+            aviso("Preencha o cadastro e clique em Cadastrar.")
 
     if cadastro is not None:
         tem_coordenada = cadastro["latitude"] is not None and cadastro["longitude"] is not None and np.isfinite(cadastro["latitude"]) and np.isfinite(cadastro["longitude"])
@@ -424,6 +431,6 @@ with aba_local:
                 f"de {numero_br(decisao['total'])} candidatos, com pontuação {numero_br(100 * decisao['pontuacao'], 1)}."
             )
             if decisao["recomendar"]:
-                st.success(texto + f" **Recomendar:** entra no top {n} por mérito.")
+                aviso(texto + f" **Recomendar:** entra no top {n} por mérito.")
             else:
-                st.info(texto + f" **Não recomendar por mérito:** fica fora do top {n}. A cota de 1 local novo ainda pode levá-lo à lista, se ele for o local novo mais bem pontuado para essa pessoa.")
+                aviso(texto + f" **Não recomendar por mérito:** fica fora do top {n}. A cota de 1 local novo ainda pode levá-lo à lista, se ele for o local novo mais bem pontuado para essa pessoa.")

@@ -971,6 +971,8 @@ Código em `app.py` (Streamlit), funções sem Streamlit em `src/interface.py`, 
 
 **Modelos:** a interface carrega os modelos congelados da seção 4.9 (`recomendador.joblib`, ajustado em `treino_total`, e `recomendador_c3.joblib`, em `treino_total_c3`), com cache; a primeira carga leva de 5 a 30 segundos, e cada interação, menos de 1 segundo. Os usuários aparecem só como "Usuário #N", numerados pela ordem alfabética do identificador, de 1 a 140.895.
 
+**Visual:** o app usa o tema da apresentação (`.streamlit/config.toml`, com as cores de `src/tema_apresentacao.py`): terracota como cor principal, sálvia nos gráficos de comparação e tons da paleta nos cartões; os quadros de informação têm borda neutra, porque o `st.info` do Streamlit é sempre azul.
+
 **Barra lateral:** descrição do sistema e dos quatro componentes da pontuação, e o tamanho da lista, de 5 a 20, que vale para todas as abas.
 
 **Abas:**
@@ -1047,3 +1049,4 @@ Os gráficos de estimação e de performance refazem as contas dos notebooks 03 
 - **2026-11-05:** a seção 7 passou a seguir a ordem do enunciado, com o item de cada slide no rodapé, e o item d ganhou a explicação didática do método, a pedido da usuária.
 - **2026-11-05:** a seção 7 registra a divisão em slides curtos (um assunto e um visual por slide), a pedido da usuária.
 - **2026-11-05:** a seção 7 registra o código dos gráficos da apresentação (`scripts/graficos_apresentacao.py`) e o tema em `src/tema_apresentacao.py`.
+- **2026-11-05:** a seção 6 registra o tema do app, igual ao da apresentação; as telas `figuras/50_` a `53_` foram capturadas de novo.

@@ -172,19 +172,20 @@ def cadastro_do_local(local):
 # ------------------------------------------------------------------ Demonstração
 
 # Família visual de cada categoria principal: ícone e cor do cartão, pela primeira palavra-chave que casar.
+# As cores são tons do tema da apresentação (terracota, mostarda, sálvia e marrons).
 FAMILIAS = [
-    (("coffee", "cafe", "espresso", "tea"), "☕", "#7a5230"),
-    (("pizza",), "🍕", "#c0392b"),
-    (("mexican", "taco", "burrito", "latin", "tex-mex"), "🌮", "#d35400"),
-    (("hamburger", "fast food", "hot dog"), "🍔", "#b9770e"),
-    (("chinese", "asian", "japanese", "sushi", "thai", "vietnamese", "korean", "indian"), "🥢", "#922b21"),
-    (("bakery", "donut", "dessert", "ice cream", "cake", "cupcake", "cookie", "chocolate", "frozen yogurt"), "🍩", "#a93c78"),
-    (("steak", "barbecue", "grill", "chophouse"), "🥩", "#78281f"),
-    (("sandwich", "deli", "bagel", "sub"), "🥪", "#1e8449"),
-    (("breakfast", "brunch", "diner", "family", "pancake"), "🍳", "#2874a6"),
-    (("bar", "brew", "pub", "beer", "wine", "cocktail", "tavern", "lounge", "saloon", "distillery"), "🍺", "#6c3483"),
+    (("coffee", "cafe", "espresso", "tea"), "☕", "#6B4226"),
+    (("pizza",), "🍕", "#B44E1C"),
+    (("mexican", "taco", "burrito", "latin", "tex-mex"), "🌮", "#CC8B20"),
+    (("hamburger", "fast food", "hot dog"), "🍔", "#A06A12"),
+    (("chinese", "asian", "japanese", "sushi", "thai", "vietnamese", "korean", "indian"), "🥢", "#8A3A14"),
+    (("bakery", "donut", "dessert", "ice cream", "cake", "cupcake", "cookie", "chocolate", "frozen yogurt"), "🍩", "#C9765A"),
+    (("steak", "barbecue", "grill", "chophouse"), "🥩", "#5C260C"),
+    (("sandwich", "deli", "bagel", "sub"), "🥪", "#697967"),
+    (("breakfast", "brunch", "diner", "family", "pancake"), "🍳", "#8A9A87"),
+    (("bar", "brew", "pub", "beer", "wine", "cocktail", "tavern", "lounge", "saloon", "distillery"), "🍺", "#4E5A4C"),
 ]
-FAMILIA_PADRAO = ("🍽️", "#34495e")
+FAMILIA_PADRAO = ("🍽️", "#333F48")
 
 
 def familia(categoria):
@@ -255,14 +256,14 @@ ESTILO_PRATELEIRA = """
   background:rgba(128,128,128,.08); border:1px solid rgba(128,128,128,.22); transition:transform .15s;}
 .cartao:hover {transform:scale(1.04);}
 .capa {height:96px; display:flex; align-items:center; justify-content:center; font-size:44px; position:relative;}
-.selo {position:absolute; top:8px; left:8px; background:#e50914; color:#fff; font-size:11px; font-weight:700;
+.selo {position:absolute; top:8px; left:8px; background:#333F48; color:#fff; font-size:11px; font-weight:700;
   padding:2px 7px; border-radius:4px; letter-spacing:.04em;}
 .posicao {position:absolute; bottom:4px; right:10px; color:rgba(255,255,255,.85); font-size:26px; font-weight:800;}
 .corpo {padding:8px 10px 10px; font-size:12.5px; line-height:1.35;}
 .nome {font-weight:700; font-size:14px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:38px;}
 .cidade {opacity:.75;}
 .categorias {opacity:.75; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.match {color:#46d369; font-weight:700; margin-top:4px;}
+.match {color:#B44E1C; font-weight:700; margin-top:4px;}
 .porque {opacity:.7; font-size:11.5px; margin-top:4px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;}
 </style>
 """

@@ -1,0 +1,7 @@
+# Tema do app: o mesmo da apresentação (src/tema_apresentacao.py).
+[theme]
+base = "light"
+primaryColor = "#B44E1C"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F6F2EC"
+textColor = "#333F48"
