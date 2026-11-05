@@ -996,7 +996,29 @@ Código em `app.py` (Streamlit), funções sem Streamlit em `src/interface.py`, 
 
 ## 7. Apresentação
 
-*A preencher na Fase 6.*
+Roteiro em `apresentacao/roteiro_slides.md` e base dos slides em `apresentacao/T1_Sistema_Recomendacao.pptx`, gerada por `scripts/gerar_ppt.py`. A base segue o modelo simples da usuária no Canva, onde os slides finais serão montados.
+
+**Estrutura, para cerca de 15 minutos:**
+
+| Item do enunciado | Slides |
+|---|---|
+| a. Capa | 1 |
+| b. O sistema | 2 |
+| c. A base | 3 a 5 |
+| d. Teoria do modelo | 6 a 8 |
+| e. Tratamento dos dados | 9 |
+| f. Treino e teste | 10 |
+| g. Estimação | 11 e 12 |
+| h. Performance | 13 e 14 |
+| i. Interface | 15 (demonstração) e 16 (os três cenários) |
+| Conclusões | 17 |
+| Apêndice | sazonalidade, escolhas dos cenários 2 e 3, curvas ROC e previsão de nota, telas inteiras |
+
+**Demonstração:** roteiro ao vivo de cerca de 2min30, com o app aberto antes da aula: a aba Demonstração com o Usuário #12.369, o usuário novo de Cheyenne com cafeteria e um local novo real. As telas do slide 16 e do apêndice servem de reserva. Usar ou não a demonstração ao vivo ainda será decidido.
+
+**Conferências:** o validador do arquivo passou; cada slide foi renderizado pelo PowerPoint e revisado; o texto não cita nenhuma métrica fora das vistas em aula; todos os slides têm notas do orador.
+
+**Limitações:** as fontes do modelo (Montserrat e Inter) não estão instaladas, e a base usa Century Gothic e Arial; os integrantes ainda não constam da capa.
 
 ## 8. Entrega
 
@@ -1009,3 +1031,4 @@ Código em `app.py` (Streamlit), funções sem Streamlit em `src/interface.py`, 
 - **2026-11-04:** a seção 4.3 registra a escolha conjunta de local e pesos, que substituiu a escolha do local com pesos fixos prevista no plano.
 - **2026-11-04:** na seção 4.4, os pesos do usuário novo e do local novo deixaram de ser provisórios (seções 4.5 e 4.6), e a lista do usuário antigo ganhou a cota de 1 local novo.
 - **2026-11-05:** a seção 6 registra a interface com quatro abas; a aba Demonstração foi pedida pela usuária durante a Fase 5.
+- **2026-11-05:** a seção 7 registra a base dos slides, gerada a partir do modelo da usuária no Canva.

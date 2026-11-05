@@ -13,3 +13,6 @@ __pycache__/
 
 # Modelos ajustados: guardam o treino, com identificadores de usuários, e são regenerados pelo notebook 03.
 modelos/*.joblib
+
+# Recortes das telas, regenerados por scripts/gerar_ppt.py.
+apresentacao/imagens/

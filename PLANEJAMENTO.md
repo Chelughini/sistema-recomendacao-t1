@@ -219,9 +219,9 @@ Sistema de Recomendações/
 
 ## Pendências com a usuária (perguntar quando a fase chegar)
 
-- [ ] **P1 — Integrantes e título** (Fase 6).
+- [ ] **P1 — Integrantes e título** (Fase 6). Título provisório aprovado em 2026-11-05: "Onde comer em Wyoming: recomendação por conteúdo e escores de produto"; faltam os integrantes.
 - [x] **P2 — Definições** de cobertura, novidade e serendipidade: a usuária decidiu em 2026-11-03 usar as da seção A.3. Declarar nos slides que vêm da literatura geral.
-- [ ] **P3 — Template do PPT** (Fase 6). Padrão: layout próprio e limpo.
+- [x] **P3 — Template do PPT** (Fase 6): o modelo simples da usuária no Canva (`modelo_ppt_canva_01.pdf`); o `.pptx` gerado é a base para ela montar os slides finais no Canva.
 - [ ] **P4 — Entrega da base:** os brutos têm ~365 MB (Fase 7). Padrão: dados processados, link da fonte e notebooks que regeneram tudo.
 - [x] **P5 — A base já foi publicada no Moodle?** (Fase 0). Sim, confirmado pela usuária em 2026-11-03.
 - [ ] **P6 — Data da apresentação** (opcional, para o roteiro de fala).
@@ -545,18 +545,18 @@ Antes: resolver P1 e P3. Carregar a skill de PPT. O enunciado pede ppt, então o
 
 Cerca de 20 a 25 slides. Números lidos das saídas dos notebooks.
 
-- [ ] **a.** Capa: título, disciplina, professor, integrantes, data.
-- [ ] **b.** Sistema (2): problema, técnica, fluxo dados → features → perfil e escores → ordenação → interface; os 3 cenários.
-- [ ] **c.** Base (5–6): origem e recorte; números; notas; atividade; cauda longa; mapa; tempo e sazonalidade.
-- [ ] **d.** Teoria (3–4): conteúdo, TF-IDF, cosseno; perfil; escores; local; combinação. Justificativa da técnica com as análises da seção 1.5.
-- [ ] **e.** Tratamento (2): funil; recorte pela categoria principal; atributos excluídos e por quê.
-- [ ] **f.** Treino e teste (2): divisão temporal com um ano de validação; segmentos; locais novos naturais e simulados.
-- [ ] **g.** Estimação (2–3): critério duplo e fronteira conversão × gosto; pesos; ablação; exemplo explicado.
-- [ ] **h.** Performance (4): um slide por cenário, só com métricas da aula e intervalos; previsão de nota e curvas ROC; limitações.
-- [ ] **i.** Interface (3): uma tela por cenário.
-- [ ] Encerramento: conclusões, limitações, trabalhos futuros.
-- [ ] Notas do orador em todos os slides.
-- [ ] **Revisão visual:** converter para imagens e olhar cada slide. **Busca final:** nenhum slide cita Recall, HitRate, nDCG, MAP ou Precision.
+- [ ] **a.** Capa: título, disciplina, professor, integrantes, data. Falta só o nome dos integrantes (P1).
+- [x] **b.** Sistema (2): problema, técnica, fluxo dados → features → perfil e escores → ordenação → interface; os 3 cenários.
+- [x] **c.** Base (5–6): origem e recorte; números; notas; atividade; cauda longa; mapa; tempo e sazonalidade.
+- [x] **d.** Teoria (3–4): conteúdo, TF-IDF, cosseno; perfil; escores; local; combinação. Justificativa da técnica com as análises da seção 1.5.
+- [x] **e.** Tratamento (2): funil; recorte pela categoria principal; atributos excluídos e por quê.
+- [x] **f.** Treino e teste (2): divisão temporal com um ano de validação; segmentos; locais novos naturais e simulados.
+- [x] **g.** Estimação (2–3): critério duplo e fronteira conversão × gosto; pesos; ablação; exemplo explicado.
+- [x] **h.** Performance (4): um slide por cenário, só com métricas da aula e intervalos; previsão de nota e curvas ROC; limitações.
+- [x] **i.** Interface (3): uma tela por cenário.
+- [x] Encerramento: conclusões, limitações, trabalhos futuros.
+- [x] Notas do orador em todos os slides.
+- [x] **Revisão visual:** converter para imagens e olhar cada slide. **Busca final:** nenhum slide cita Recall, HitRate, nDCG, MAP ou Precision.
 
 ---
 
@@ -618,3 +618,4 @@ Cerca de 20 a 25 slides. Números lidos das saídas dos notebooks.
 - **2026-11-04 — Ponto de decisão:** a usuária confirmou a configuração congelada e a técnica, ciente de que os vizinhos combinados convertem 17% mais no cenário 1. Próximo: Fase 4, com o teste rodando uma única vez.
 - **2026-11-04 — Fase 4 concluída; o teste rodou uma única vez.** `src/avaliacao.py` (`cenario1`, `cenario2`, `cenario3`, `erros_previsao`, `pares_roc_gosto`, `pares_roc_consumo`) e `testes/test_avaliacao.py`; 238 testes passam. **Ensaio:** as funções foram rodadas antes na validação (script e uma cópia temporária do notebook, apagada) e reproduziram o 03 ao centavo; o ensaio pegou só ajustes de apresentação (período vazio, plural, casas decimais). **Teste:** cenário 1, modelo 0,0520 de conversão@10 e 0,5542 de AUC de gosto (5.663 usuários); empata na conversão com popularidade + local e com sem conteúdo; vizinhos combinados 0,0651 (+25%), todos os colaborativos abaixo do acaso no gosto. Cenário 2, 0,0452 e 0,5598 (6.783 usuários), empate com o método 4. Cenário 3, naturais: AUC de consumo de 0,9209 contra 0,9173 do só local, **empate** (+0,0036, IC de −0,0008 a 0,0076), ao contrário da validação; simulados +0,0044, fora do empate. Cota: listas com local novo convertido de 21 para 126, com −0,0014 de conversão. Previsão: RMSE de 1,0248 (escore + viés). Estabilidade: conversão de 0,0504 no primeiro ano e 0,0235 depois, nas duas ordenações. Figuras `40_` a `43_` conferidas; a curva ROC de gosto tem degraus, explicados na leitura. **Desvios:** (1) o notebook 04 foi criado por um script de uso único, que aborta se o arquivo existir, e as leituras foram acrescentadas por script que confere âncoras; (2) a saída B usa os usuários com conversão entre os candidatos, e não uma amostra de 10.000, e na validação dá 3,4% no top-10, contra 3,1% do notebook 03; (3) os pesos do método 3 do cenário 2 (0 / 0,3 / 0 / 0,7) estão escritos no notebook 04, lidos da saída do 03. Nada foi ajustado depois do teste. Próximo: Fase 5 (interface).
 - **2026-11-05 — Fase 5 concluída.** `app.py` com quatro abas (Demonstração, Usuário antigo, Usuário novo, Local novo), `src/interface.py` (numeração "Usuário #N", opções traduzidas de categorias e atributos, resumo e gráfico do perfil, histórico, motivo do cenário 3, prateleiras e cartões) e `testes/test_interface.py`; 251 testes passam. **Pedido da usuária durante a fase:** aba de demonstração com as preferências em gráficos e as recomendações em prateleiras no estilo Netflix; todas as prateleiras saem da pontuação do modelo. **Testes:** painel do navegador e `AppTest` do Streamlit nos três cenários e nas mensagens (usuário inexistente, formulário vazio, regra de não esvaziar, cidade sem locais, cadastro vazio), sem erros. O teste de `prateleiras` pegou o top da demonstração diferente da lista do cenário 1 (a cota valia para as 40 posições da lista ampliada); corrigido. O componente "Local" sobrescrevia o nome do local na tabela e virou "Localização". **Telas:** `figuras/50_` a `53_`, salvas pelo `scripts/capturar_telas.py` (Playwright, tema claro, 1.800 px de largura) com usuários fixos (#12.369 e #70.927). **Desvios:** (1) o painel do navegador leu o `.claude/launch.json` da pasta em que a sessão começou (outro projeto), e o servidor foi iniciado pelo terminal; o `.claude/launch.json` deste projeto ficou criado para as próximas sessões; (2) quatro telas em vez de três, por causa da aba nova. Próximo: Fase 6 (apresentação), que depende de P1 (integrantes e título) e P3 (template).
+- **2026-11-05 — Fase 6, base dos slides gerada.** Roteiro em `apresentacao/roteiro_slides.md` (27 slides no completo; versão de 15 minutos com 16 slides e apêndice, a pedido da usuária). `scripts/gerar_ppt.py` (python-pptx) gera `apresentacao/T1_Sistema_Recomendacao.pptx`: 17 slides principais (itens a–i, a demonstração e as conclusões) e 7 de apêndice, com notas do orador em todos. **Visual:** o modelo da usuária no Canva (fundo bege `EDE7DD`, títulos em terracota `B44E1C`, subtítulos em sálvia `697967`, mostarda `CC8B20`, cartões brancos arredondados; capa com o círculo branco e os três traços). As fontes do modelo (Montserrat e Inter) não estão instaladas: os títulos usam Century Gothic e o texto, Arial; no Canva, volta-se às originais. **Demonstração:** incluída a pedido da usuária (slide com o roteiro ao vivo em 3 passos e as telas de reserva); usar ou não ao vivo fica para decidir. **Conferência:** o validador da skill passou; os slides foram renderizados pelo PowerPoint e revisados (corrigidos sobreposições no funil e no roteiro da demonstração, cabeçalhos quebrados na tabela de pesos e telas ilegíveis); nenhuma métrica proibida no texto. **Desvios:** (1) o plano previa o link do Canva, bloqueado no painel do navegador; a usuária mandou o PDF; (2) o deck é uma base para o Canva, e não a versão final. Falta: integrantes (P1) e a decisão sobre a demonstração ao vivo.
