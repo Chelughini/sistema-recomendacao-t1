@@ -2,7 +2,7 @@
 
 - **Disciplina:** Sistemas de Recomendação, Escola Politécnica, PUCRS
 - **Professor:** Rafael Scopel, PhD
-- **Integrantes:** a definir
+- **Integrantes:** Julia Peixoto e Michele Ughini
 
 > Registro vivo do trabalho: descreve sempre o estado atual. Mudanças no que já foi documentado ficam em [Histórico de alterações](#histórico-de-alterações).
 

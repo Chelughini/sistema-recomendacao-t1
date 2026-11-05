@@ -272,7 +272,7 @@ def capa(p):
     texto(slide, 0.75, 0.68, 6.5, 0.4, "PUCRS · Sistemas de Recomendação · Prof. Rafael Scopel, PhD", tamanho=14, cor=TERRACOTA, espaco=0)
     texto(slide, 0.75, 1.55, 6.3, 2.6, ["Onde comer", "em Wyoming"], tamanho=58, cor=TERRACOTA, fonte=FONTE_TITULO, negrito=True, espaco=0)
     texto(slide, 0.75, 4.05, 6.0, 0.9, "Recomendação por conteúdo e escores de produto", tamanho=20, cor=SALVIA, fonte=FONTE_TITULO, negrito=True, espaco=0)
-    texto(slide, 0.75, 5.3, 6.0, 0.9, ["Integrantes: [a definir]", "Novembro de 2026"], tamanho=14, cor=TEXTO, espaco=4)
+    texto(slide, 0.75, 5.3, 6.0, 0.9, ["Julia Peixoto e Michele Ughini", "Novembro de 2026"], tamanho=14, cor=TEXTO, espaco=4)
     tracos(slide, 0.75, 6.69)
     notas(slide, "Apresentar o grupo e o tema: um sistema que recomenda restaurantes, cafés e bares de Wyoming a partir das avaliações do Google, com a técnica de conteúdo e escores de produto.")
 

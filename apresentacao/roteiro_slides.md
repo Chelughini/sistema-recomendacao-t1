@@ -203,7 +203,7 @@ O tempo é de cerca de 15 minutos. Com uns 2 minutos e meio de demonstração, s
 
 ## Decisões
 
-1. **Título:** "Onde comer em Wyoming: recomendação por conteúdo e escores de produto" (provisório, aprovado em 2026-11-05). **Integrantes:** a definir.
+1. **Título:** "Onde comer em Wyoming: recomendação por conteúdo e escores de produto" (provisório, aprovado em 2026-11-05). **Integrantes:** Julia Peixoto e Michele Ughini.
 2. **Template:** o modelo simples da usuária no Canva (`modelo_ppt_canva_01.pdf`): fundo bege, títulos em terracota, subtítulos em sálvia, cartões brancos. O PPT gerado serve de base para os slides finais, montados no Canva. Fontes: Century Gothic e Arial no lugar de Montserrat e Inter, que não estão instaladas.
 3. **Tempo:** cerca de 15 minutos → versão de 16 slides acima, com apêndice.
 4. **Demonstração:** incluída (slide 15, com roteiro ao vivo em 3 passos, e slide 16 e apêndice com as telas de reserva); usar ou não ao vivo ainda será decidido. Recomendação: ao vivo, com o app aberto antes, e vídeo ou telas de reserva.
