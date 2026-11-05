@@ -5,6 +5,8 @@ from scipy import sparse
 
 from src.metricas import (
     auc,
+    aplicar_cota_de_novos,
+    auc_por_item,
     avaliar,
     comparar,
     correlacao_rankings,
@@ -13,6 +15,8 @@ from src.metricas import (
     erros_de_nota,
     intervalo,
     montar_protocolo,
+    posicoes_na_lista,
+    top_n_com_novos,
 )
 
 
@@ -294,3 +298,45 @@ def test_intervalo_e_comparacao_pareada():
     assert comparacao["empate"] is False
     assert comparacao["usuarios"] == 2
     assert comparar(bom, bom, "conversao")["empate"] is True
+
+
+def test_auc_por_item_compara_positivos_com_todos_os_demais():
+    pontuacoes = np.array([[0.9, 0.1], [0.5, 0.2], [0.1, 0.3]])
+    positivos = np.array([[True, False], [False, False], [False, True]])
+    resultado = auc_por_item(pontuacoes, positivos)
+    assert resultado[0] == 1.0
+    assert resultado[1] == 1.0
+    assert np.isnan(auc_por_item(pontuacoes, np.zeros((3, 2), dtype=bool))).all()
+
+
+def test_posicao_na_lista_ignora_avaliados_e_empates():
+    candidatos = np.array([[0.9, 0.5, 0.7, 0.3]])
+    avaliados = sparse.csr_matrix(np.array([[1, 0, 0, 0]]))
+    # Acima de 0,5 só fica 0,7, pois 0,9 já foi avaliado; o empate com 0,5 não conta.
+    assert posicoes_na_lista(candidatos, avaliados, np.array([[0.5, 0.95, 0.1]])).tolist() == [[2, 1, 4]]
+
+
+def test_top_n_com_novos_devolve_os_novos_que_entram():
+    candidatos = np.array([[0.9, 0.8, 0.7], [0.9, 0.8, 0.7]])
+    avaliados = sparse.csr_matrix((2, 3))
+    novos = np.array([[0.85, 0.1], [0.2, 0.3]])
+    assert top_n_com_novos(candidatos, avaliados, novos, n=2) == [[0], []]
+
+
+def test_cota_de_novos_troca_o_ultimo_da_lista_e_nao_mexe_em_quem_ja_tem_novo():
+    pontuacoes = np.array([[0.9, 0.8, 0.7, 0.3, 0.2], [0.9, 0.95, 0.7, 0.3, 0.2]])
+    eh_novo = np.array([False, True, False, False, True])
+    avaliados = sparse.csr_matrix(np.array([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]))
+    sem_novo = np.array([[0.9, 0.5, 0.7, 0.3, 0.2]])
+    ajustada = aplicar_cota_de_novos(sem_novo, eh_novo, sparse.csr_matrix((1, 5)), n=2, cota=1)
+    # O melhor novo (índice 1, 0,5) toma o lugar do 2º (índice 2, 0,7); o 1º continua na frente.
+    assert list(np.argsort(-ajustada[0])[:2]) == [0, 1]
+    assert np.array_equal(aplicar_cota_de_novos(pontuacoes, eh_novo, avaliados, n=2, cota=1), pontuacoes)
+
+
+def test_cota_de_novos_ignora_novo_ja_avaliado():
+    pontuacoes = np.array([[0.9, 0.8, 0.5, 0.4]])
+    eh_novo = np.array([False, False, True, True])
+    avaliados = sparse.csr_matrix(np.array([[0, 0, 1, 0]]))
+    ajustada = aplicar_cota_de_novos(pontuacoes, eh_novo, avaliados, n=2, cota=1)
+    assert ajustada[0, 3] > ajustada[0, 1] and ajustada[0, 2] == 0.5

@@ -14,6 +14,7 @@ __all__ = [
     "ProtocoloAvaliacao",
     "ResultadoAvaliacao",
     "auc",
+    "auc_por_item",
     "avaliar",
     "comparar",
     "correlacao_rankings",
@@ -23,6 +24,9 @@ __all__ = [
     "ic_bootstrap",
     "intervalo",
     "montar_protocolo",
+    "aplicar_cota_de_novos",
+    "posicoes_na_lista",
+    "top_n_com_novos",
 ]
 
 MINIMO_PONTUAVEIS = 10
@@ -305,3 +309,62 @@ def comparar(resultado_a, resultado_b, metrica):
         "empate": bool(inferior <= 0 <= superior),
         "usuarios": len(pares),
     }
+
+
+def auc_por_item(pontuacoes, positivos):
+    """AUC de cada item (coluna): usuários positivos para ele × todos os demais.
+
+    É a saída "local → usuários" do cenário 3. Coluna sem positivo ou sem negativo dá NaN.
+    """
+    pontuacoes, positivos = np.asarray(pontuacoes, dtype=float), np.asarray(positivos, dtype=bool)
+    return np.array([auc(pontuacoes[positivos[:, j], j], pontuacoes[~positivos[:, j], j]) for j in range(pontuacoes.shape[1])])
+
+
+def posicoes_na_lista(pontuacoes_candidatos, ja_avaliados, pontuacoes_alvo):
+    """Posição de cada item-alvo na lista do usuário: 1 + candidatos não avaliados com pontuação maior.
+
+    `pontuacoes_candidatos` é usuários × candidatos; `ja_avaliados`, uma matriz esparsa no mesmo
+    formato; `pontuacoes_alvo`, usuários × alvos. Empate não empurra o alvo para baixo.
+    """
+    chave = np.asarray(pontuacoes_candidatos, dtype=float).copy()
+    linhas, colunas = ja_avaliados.nonzero()
+    chave[linhas, colunas] = -np.inf
+    chave = np.sort(chave, axis=1)
+    alvo = np.asarray(pontuacoes_alvo, dtype=float)
+    acima = np.array([chave.shape[1] - np.searchsorted(chave[i], alvo[i], side="right") for i in range(len(alvo))])
+    return acima + 1
+
+
+def top_n_com_novos(pontuacoes_candidatos, ja_avaliados, pontuacoes_novos, n=10, semente=42):
+    """Top-n de cada usuário juntando candidatos e itens novos; devolve, por lista, os índices dos novos que entraram."""
+    juntos = np.hstack([np.asarray(pontuacoes_candidatos, dtype=float), np.asarray(pontuacoes_novos, dtype=float)])
+    avaliados = sparse.hstack([ja_avaliados, sparse.csr_matrix(np.shape(pontuacoes_novos))], format="csr")
+    listas = _montar_listas(juntos, avaliados, n, semente)
+    inicio_novos = np.shape(pontuacoes_candidatos)[1]
+    return [[int(item - inicio_novos) for item in lista if item >= inicio_novos] for lista in listas]
+
+
+def aplicar_cota_de_novos(pontuacoes, eh_novo, ja_avaliados, n=10, cota=1):
+    """Garante `cota` itens novos no top-n: se faltarem, os melhores novos tomam as últimas posições.
+
+    Devolve uma cópia das pontuações em que esses novos sobem até logo acima do último item que eles
+    substituem; o resto da ordem não muda. Itens já avaliados não contam.
+    """
+    resultado = np.asarray(pontuacoes, dtype=float).copy()
+    eh_novo = np.asarray(eh_novo, dtype=bool)
+    chave = resultado.copy()
+    linhas, colunas = ja_avaliados.nonzero()
+    chave[linhas, colunas] = -np.inf
+    for i in range(len(chave)):
+        ordem = np.argsort(-chave[i], kind="stable")
+        validos = ordem[np.isfinite(chave[i, ordem])]
+        topo = validos[:n]
+        faltam = cota - int(eh_novo[topo].sum())
+        if faltam <= 0:
+            continue
+        novos_fora = [j for j in validos[n:] if eh_novo[j]][:faltam]
+        antigos_no_topo = [j for j in topo if not eh_novo[j]]
+        for novo, substituido in zip(novos_fora, reversed(antigos_no_topo)):
+            resultado[i, novo] = chave[i, substituido] + 1e-6
+            chave[i, novo] = resultado[i, novo]
+    return resultado

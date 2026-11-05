@@ -640,11 +640,11 @@ A classe `Recomendador`, em `src/recomendador.py`, recebe pesos, `m`, centro, ti
 | `componentes`, `pontuar` | Calculam os componentes e a pontuação, em lote |
 | `prever_nota` | Escore do local + viés do usuário, limitada a [1, 5] |
 | `explicar` | Local bem avaliado (nota 4 ou maior) mais parecido e os 3 tokens que mais pesam |
-| `recomendar` | Lista para usuário com histórico, inclusive com 1 ou 2 avaliações: abertos não avaliados, com componentes e explicação |
+| `recomendar` | Lista para usuário com histórico, inclusive com 1 ou 2 avaliações: abertos não avaliados, com componentes, explicação e a cota de 1 local novo (seção 4.6) |
 | `recomendar_usuario_novo` | Lista com o que a pessoa informar; tudo é opcional |
 | `usuarios_para_local_novo`, `posicao_local_novo` | Usuários indicados para um local novo e a posição dele na lista de um usuário |
 
-O dicionário em `src/traducoes.py` traduz os tokens para português (`misc=service_options:delivery` vira "Entrega"), e tokens sem tradução não aparecem. Os pesos do usuário novo e do local novo são provisórios até as etapas seguintes.
+O dicionário em `src/traducoes.py` traduz os tokens para português (`misc=service_options:delivery` vira "Entrega"), e tokens sem tradução não aparecem. Os pesos do usuário novo e do local novo são decididos nas seções 4.5 e 4.6, e a classe os usa por padrão.
 
 **Conferência na validação:**
 
@@ -655,7 +655,7 @@ O dicionário em `src/traducoes.py` traduz os tokens para português (`misc=serv
 
 **Limitações:**
 
-- **A lista é pouco pessoal:** um usuário de exemplo, de Cheyenne, recebe sobretudo os locais populares e bem avaliados da cidade, como Texas Roadhouse e Chick-fil-A. Isso é coerente com a ablação.
+- **A lista é pouco pessoal:** um usuário de exemplo, de Cheyenne, recebe sobretudo os locais populares e bem avaliados da cidade, como Texas Roadhouse e Chick-fil-A. Isso é coerente com a ablação. Com a cota da seção 4.6, o 10º lugar passa a ser um local novo.
 - **A explicação é uma justificativa, não a causa:** "porque você gostou de X" aponta o local mais parecido, mas o que mais pesa na posição é o local e a popularidade. Por isso, a interface deve mostrar também as barras dos componentes.
 
 ### 4.5 Cenário 2: usuário novo
@@ -705,6 +705,56 @@ A cobertura do espaço de usuários é de 100% em todos os métodos, inclusive p
 
 **Limitação:** com esse peso, a categoria declarada quase não muda a lista. Um usuário de exemplo que informa Cheyenne e restaurante chinês recebe só um restaurante chinês, em 8º, e o resto são os locais populares e bem avaliados da cidade. O que a pessoa declara desempata e amplia o catálogo, sem custar conversão.
 
+### 4.6 Cenário 3: local novo para usuário antigo
+
+O modelo é ajustado no treino do cenário 3, sem os 100 locais simulados da validação, com o vetorizador ajustado nele e a configuração do cenário 1. Um local novo não tem avaliações: o escore é a média do treino (`C` = 4,114) e a popularidade é a mediana da cidade. Os resultados ficam separados por origem: os locais novos **naturais** são o resultado principal, e os **simulados**, uma conferência.
+
+| Origem | Locais abertos | Usuários antigos com conversão | Conversões |
+|---|---|---|---|
+| Naturais | 106 | 857 | 1.056 |
+| Simulados | 100 | 1.553 | 2.038 |
+
+`relative_results` não é usado: foi coletado em 2021, depois do corte, reflete o comportamento dos usuários no Google e não existiria para um local recém-cadastrado.
+
+**Investigação: centro do perfil.** Com o perfil do cenário 1, centrado na média do usuário, o conteúdo piorava a ordenação dos locais novos, e sozinho ficava quase no acaso (AUC de consumo de 0,5107 nos naturais). Esse perfil mede do que a pessoa gosta mais que o normal para ela, e não o tipo de lugar que ela frequenta, que é o que prevê aonde ela vai. Com o perfil centrado em 3, o conteúdo sozinho chega a 0,6351, e somado ao local passa a melhorar a ordenação. **A usuária decidiu usar no cenário 3 o perfil centrado em 3**; o cenário 1 continua com o centrado na média, que lá dá mais AUC de gosto.
+
+**Ordenar locais novos para um usuário** (`α·sim + (1 − α)·local`, naturais):
+
+| Pontuação | AUC de consumo | Conversão@10 | Diferença na AUC de consumo para o só local (IC 95%) |
+|---|---|---|---|
+| Aleatório | 0,4994 | 0,0119 | −0,4202 (−0,4391 a −0,4007) |
+| Só local (α = 0) | 0,9195 | 0,0877 | — |
+| α = 0,1 | 0,9292 | 0,0951 | 0,0097 (0,0073 a 0,0122) |
+| **α = 0,5** | **0,9314** | **0,0939** | **0,0119 (0,0074 a 0,0163)** |
+| α = 0,7 | 0,9235 | 0,0911 | empate |
+| Só conteúdo | 0,6351 | 0,0212 | −0,2844 (−0,3044 a −0,2641) |
+
+O critério (conversão de pelo menos 95% da melhor, depois a maior AUC de consumo) escolhe **α = 0,5**, em empate com α de 0,1 a 0,4. A grade do plano ia até 0,3 e foi ampliada para 0,4, 0,5 e 0,7, porque o critério escolhia o fim dela. Nos simulados, α = 0,5 sobe a AUC de consumo em 0,0050 (IC 95% de 0,0017 a 0,0083) e empata na conversão. Só com categorias, a AUC de consumo cai 0,0050 nos naturais e 0,0126 nos simulados, então os atributos ficam no vetor, o que resolve a dúvida da seção 4.3.
+
+**Saída A, local → usuários:** para cada local novo, os usuários antigos que o avaliaram bem ficam acima dos demais com AUC média de 0,9176 nos naturais (85 locais), contra 0,9102 só com o local (+0,0074, IC 95% de 0,0025 a 0,0123) e 0,47 do aleatório. Nos simulados, 0,8811 contra 0,8740, em empate. O cadastro manual, com categorias, atributos, cidade e coordenada opcional, dá a mesma pontuação que o local da tabela.
+
+**Saída B, usuário → local:** com o modelo do cenário 1, que é o da lista que o usuário vê, o local novo é posicionado entre todos os candidatos do usuário, para 10.000 usuários antigos:
+
+| Origem | Posição mediana do local convertido | Convertidos no top-10 | Listas com algum local novo | Locais novos em alguma lista |
+|---|---|---|---|---|
+| Naturais | 69º de cerca de 1.300 | 3,1% | 5,7% | 45 de 106 |
+| Simulados | 73º | 1,8% | 5,1% | 40 de 100 |
+
+Com escore `C` e popularidade mediana, o local novo raramente compete com os conhecidos.
+
+**Cota de novidade:** quando nenhum local novo entra no top-10, o mais bem pontuado toma a última posição. Os candidatos são os locais do treino do cenário 3 mais os novos de cada origem.
+
+| Origem | Conversão@10 sem → com cota (diferença, IC 95%) | Listas com local novo convertido | Locais novos em alguma lista |
+|---|---|---|---|
+| Naturais | 0,0728 → 0,0700 (−0,0028, de −0,0035 a −0,0021) | 29 → 149 | 42 → 95 de 106 |
+| Simulados | 0,0724 → 0,0704 (−0,0020, de −0,0027 a −0,0014) | 31 → 201 | 39 → 84 de 100 |
+
+A cota mantém 96% da conversão, acima do limite de 95% usado nos critérios. **A usuária decidiu adotar a cota de 1 local novo.**
+
+**Cobertura do espaço de itens novos:** o conteúdo pontua 100% dos locais novos; vizinhos por item, 0%, porque eles não têm avaliações no treino. É a razão de manter a técnica.
+
+**Congelado para o cenário 3,** em `modelos/cenario3.json` e por padrão na classe: perfil centrado em 3, pesos 0,5 / 0,5 (conteúdo / local) para ordenar locais novos e usuários para um local novo, e cota de 1 local novo na lista do usuário antigo. Na classe, `recomendar` passa a considerar os locais abertos sem avaliações no treino e marca na coluna `novo` os que entram.
+
 ## 5. Avaliação final
 
 *A preencher na Fase 4.*
@@ -726,3 +776,4 @@ A cobertura do espaço de usuários é de 100% em todos os métodos, inclusive p
 - **2026-11-03:** relatório criado na Fase 0.
 - **2026-11-03:** na seção 2.1, saíram as contagens de `rating`, `user_id`, texto, fotos e respostas do arquivo inteiro, porque o notebook passou a carregar só as avaliações do recorte. Os valores do recorte estão na seção 2.2.
 - **2026-11-04:** a seção 4.3 registra a escolha conjunta de local e pesos, que substituiu a escolha do local com pesos fixos prevista no plano.
+- **2026-11-04:** na seção 4.4, os pesos do usuário novo e do local novo deixaram de ser provisórios (seções 4.5 e 4.6), e a lista do usuário antigo ganhou a cota de 1 local novo.

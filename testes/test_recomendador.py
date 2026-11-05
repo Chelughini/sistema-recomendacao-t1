@@ -361,12 +361,22 @@ def test_classe_aplica_a_formula_da_pontuacao():
 
 
 def test_recomendar_tira_fechados_avaliados_e_locais_fora_do_treino():
-    tabela = _modelo().recomendar("ana", n=10)
+    tabela = _modelo().recomendar("ana", n=10, cota_novos=0)
     assert set(tabela["gmap_id"]) == {"pizza2", "cafe2", "longe"}
 
 
+def test_cota_poe_um_local_novo_aberto_na_lista():
+    modelo = _modelo()
+    assert list(modelo.locais_novos) == ["novo_real"]
+    tabela = modelo.recomendar("ana", n=2)
+    assert len(tabela) == 2
+    assert tabela["gmap_id"].iloc[-1] == "novo_real" and tabela["novo"].tolist() == [False, True]
+    # Com espaço na lista, o local novo entra por mérito, sem tirar ninguém.
+    assert set(modelo.recomendar("ana", n=10)["gmap_id"]) == {"pizza2", "cafe2", "longe", "novo_real"}
+
+
 def test_recomendar_ordena_e_respeita_n():
-    tabela = _modelo().recomendar("ana", n=2)
+    tabela = _modelo().recomendar("ana", n=2, cota_novos=0)
     assert len(tabela) == 2
     assert tabela["pontuacao"].is_monotonic_decreasing
     assert {"nome", "cidade", "conteudo", "escore", "local", "popularidade", "explicacao"} <= set(tabela.columns)
@@ -550,3 +560,16 @@ def test_cidade_com_poucos_locais_avisa_e_nao_esvazia():
     tabela = _modelo().recomendar_usuario_novo(cidade="Z", n=3)
     assert len(tabela) == 3
     assert any("ampliada" in aviso for aviso in tabela.attrs["avisos"])
+
+
+def test_cenario_3_usa_o_perfil_centrado_em_3():
+    modelo = Recomendador(percentil=50, centro="usuario", local="cidade").ajustar(_treino_modelo(), _locais_modelo())
+    fixo = Recomendador(percentil=50, centro="fixo", local="cidade").ajustar(_treino_modelo(), _locais_modelo())
+    candidatos = ["pizza2", "cafe2"]
+    usuarios = ["ana", "bia"]
+    assert np.allclose(modelo.componentes_local_novo(usuarios, candidatos)["conteudo"], fixo.componentes(usuarios, candidatos)["conteudo"])
+    assert not np.allclose(modelo.componentes(usuarios, candidatos)["conteudo"], fixo.componentes(usuarios, candidatos)["conteudo"])
+    cadastro = {"category": ["Cafe"], "MISC": {}, "cidade": "X"}
+    tabela = modelo.usuarios_para_local_novo(cadastro, n=5).set_index("user_id")
+    esperado = fixo.usuarios_para_local_novo(cadastro, n=5).set_index("user_id")
+    assert np.allclose(tabela.loc[esperado.index, "conteudo"], esperado["conteudo"])

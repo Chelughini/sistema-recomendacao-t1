@@ -1,0 +1,9 @@
+{
+  "centro_local_novo": "fixo",
+  "pesos_local_novo": {
+    "alfa": 0.5,
+    "gama": 0.5
+  },
+  "cota_novos": 1,
+  "saida_b": "modelo do cenário 1, com escore C e popularidade mediana da cidade para o local novo"
+}

@@ -8,6 +8,7 @@ from sklearn.preprocessing import normalize
 from src.analises import matriz_distancias_km
 from src.divisao import MINIMO_USUARIO_ANTIGO, eh_relevante
 from src.features import VetorizadorConteudo
+from src.metricas import aplicar_cota_de_novos
 from src.traducoes import traduzir_token
 
 CENTRO_PADRAO = 3
@@ -250,8 +251,9 @@ class Recomendador:
     """Modelo de conteúdo e escores de produto, com os três cenários do trabalho.
 
     Os pesos seguem a ordem (conteúdo, escore, local, popularidade). `pesos_usuario_novo` e
-    `pesos_local_novo` (conteúdo, local) vêm das seções 3.5 e 3.6 do planejamento; o de local novo
-    ainda é provisório. No usuário novo, o peso do conteúdo vale para tudo o que é declarado:
+    `pesos_local_novo` (conteúdo, local) vêm das seções 3.5 e 3.6 do planejamento. No cenário 3,
+    o conteúdo usa o perfil centrado em `centro_local_novo`, e a lista do usuário antigo reserva
+    `cota_novos` posições a locais novos (abertos e sem avaliações no treino). No usuário novo, o peso do conteúdo vale para tudo o que é declarado:
     categorias, atributos e local de exemplo.
     """
 
@@ -264,7 +266,9 @@ class Recomendador:
         tau=200,
         opcoes_vetor=None,
         pesos_usuario_novo=PESOS_USUARIO_NOVO,
-        pesos_local_novo=(0.1, 0.5),
+        pesos_local_novo=(0.5, 0.5),
+        centro_local_novo="fixo",
+        cota_novos=1,
     ):
         if local not in {"cidade", "distancia", "media"}:
             raise ValueError(f"Local desconhecido: {local}")
@@ -276,6 +280,8 @@ class Recomendador:
         self.opcoes_vetor = opcoes_vetor or {}
         self.pesos_usuario_novo = pesos_usuario_novo
         self.pesos_local_novo = pesos_local_novo
+        self.centro_local_novo = centro_local_novo
+        self.cota_novos = cota_novos
 
     def ajustar(self, treino, locais, vetorizador=None, matriz=None):
         """Ajusta com as avaliações do treino; sem vetorizador, ajusta um só com os locais do treino."""
@@ -292,9 +298,16 @@ class Recomendador:
         self.escores, self.parametros = escores_de_produto(self.treino, self.locais, self.percentil)
         self.perfis, usuarios = perfis_de_usuarios(self.treino, self.matriz, self._posicao_local.to_dict(), self.centro)
         self._linha_perfil = pd.Series(np.arange(len(usuarios)), index=usuarios)
+        self.perfis_local_novo = self.perfis
+        if self.centro_local_novo != self.centro:
+            self.perfis_local_novo, usuarios_c3 = perfis_de_usuarios(
+                self.treino, self.matriz, self._posicao_local.to_dict(), self.centro_local_novo
+            )
+            assert np.array_equal(usuarios, usuarios_c3)
         self.avaliacoes_por_usuario = self.treino.groupby("user_id").size()
         self.vies_usuario = ajustar_vies_usuarios(self.treino, self.escores["escore"])
         self.candidatos_padrao = self.escores.index[self.escores["aberto"] & (self.escores["avaliacoes"] > 0)].to_numpy().astype(str)
+        self.locais_novos = self.escores.index[self.escores["aberto"] & (self.escores["avaliacoes"] == 0)].to_numpy().astype(str)
         self._distancias = None
         return self
 
@@ -312,11 +325,12 @@ class Recomendador:
             return por_distancia
         return (afinidade_cidade(self.treino, self.locais, usuarios, candidatos) + por_distancia) / 2
 
-    def _similaridade(self, usuarios, vetores):
+    def _similaridade(self, usuarios, vetores, perfis=None):
+        perfis = self.perfis if perfis is None else perfis
         linhas = self._linha_perfil.reindex(usuarios)
         tem_perfil = linhas.notna().to_numpy()
         resultado = np.full((len(usuarios), vetores.shape[0]), 0.5)
-        resultado[tem_perfil] = similaridade_conteudo(self.perfis[linhas[tem_perfil].astype(int).to_numpy()], vetores)
+        resultado[tem_perfil] = similaridade_conteudo(perfis[linhas[tem_perfil].astype(int).to_numpy()], vetores)
         return resultado
 
     def componentes(self, usuarios, candidatos):
@@ -328,6 +342,19 @@ class Recomendador:
             "escore": self.escores["escore_normalizado"].reindex(candidatos).to_numpy(),
             "local": self._afinidade(usuarios, candidatos),
             "popularidade": self.escores["popularidade"].reindex(candidatos).to_numpy(),
+        }
+
+    def componentes_local_novo(self, usuarios, candidatos):
+        """Conteúdo e local do cenário 3, em lote; o conteúdo usa o perfil com `centro_local_novo`.
+
+        O perfil centrado em 3 descreve o tipo de lugar que a pessoa frequenta, o que prevê aonde ela
+        vai; o centrado na média dela descreve do que ela gosta mais, o que serve ao cenário 1.
+        """
+        usuarios = np.asarray(usuarios).astype(str)
+        colunas = self._posicao_local.reindex(candidatos).to_numpy()
+        return {
+            "conteudo": self._similaridade(usuarios, self.matriz[colunas], self.perfis_local_novo),
+            "local": self._afinidade(usuarios, candidatos),
         }
 
     def pontuar(self, usuarios, candidatos):
@@ -397,21 +424,32 @@ class Recomendador:
             }
         )
 
-    def recomendar(self, usuario, n=10, com_explicacao=True):
-        """Lista para um usuário com histórico, inclusive com 1 ou 2 avaliações: abertos não avaliados."""
+    def recomendar(self, usuario, n=10, com_explicacao=True, cota_novos=None):
+        """Lista para um usuário com histórico, inclusive com 1 ou 2 avaliações: abertos não avaliados.
+
+        Os locais novos concorrem com os demais e, se nenhum entrar no top-n, os `cota_novos` mais bem
+        pontuados tomam as últimas posições. A coluna `novo` marca esses locais.
+        """
         self._exigir_usuario(usuario)
+        cota = self.cota_novos if cota_novos is None else cota_novos
         avaliados = set(self.treino.loc[self.treino["user_id"] == usuario, "gmap_id"])
-        candidatos = np.array([gmap_id for gmap_id in self.candidatos_padrao if gmap_id not in avaliados])
+        disponiveis = np.concatenate([self.candidatos_padrao, self.locais_novos]) if cota else self.candidatos_padrao
+        candidatos = np.array([gmap_id for gmap_id in disponiveis if gmap_id not in avaliados])
         componentes = self.componentes([usuario], candidatos)
         pontuacoes = pontuar(componentes, self.pesos)[0]
+        eh_novo = np.isin(candidatos, self.locais_novos)
+        chave = pontuacoes
+        if cota:
+            chave = aplicar_cota_de_novos(pontuacoes[None, :], eh_novo, sparse.csr_matrix((1, len(candidatos))), n=n, cota=cota)[0]
         por_candidato = {
             "conteudo": componentes["conteudo"][0],
             "escore": componentes["escore"],
             "local": componentes["local"][0],
             "popularidade": componentes["popularidade"],
         }
-        ordem = np.argsort(-pontuacoes, kind="stable")[:n]
+        ordem = np.argsort(-chave, kind="stable")[:n]
         tabela = self._tabela_de_lista(candidatos, ordem, pontuacoes, por_candidato)
+        tabela["novo"] = eh_novo[ordem]
         if com_explicacao:
             tabela["explicacao"] = [self.explicar(usuario, gmap_id)["frase"] for gmap_id in tabela["gmap_id"]]
         return tabela
@@ -584,7 +622,7 @@ class Recomendador:
         """Usuários antigos mais indicados para um local novo, vindo da tabela ou de um cadastro manual."""
         usuarios = self.avaliacoes_por_usuario.index[self.avaliacoes_por_usuario >= minimo_avaliacoes].to_numpy().astype(str)
         vetor = self.vetorizador.transform([cadastro])
-        conteudo = self._similaridade(usuarios, vetor)[:, 0]
+        conteudo = self._similaridade(usuarios, vetor, self.perfis_local_novo)[:, 0]
         local = self._afinidade_local_novo(usuarios, cadastro)
         alfa, gama = self.pesos_local_novo
         pontuacoes = alfa * conteudo + gama * local
