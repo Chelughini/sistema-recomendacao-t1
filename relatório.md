@@ -996,23 +996,33 @@ Código em `app.py` (Streamlit), funções sem Streamlit em `src/interface.py`, 
 
 ## 7. Apresentação
 
-Roteiro em `apresentacao/roteiro_slides.md` e base dos slides em `apresentacao/T1_Sistema_Recomendacao.pptx`, gerada por `scripts/gerar_ppt.py`. A base segue o modelo simples da usuária no Canva, onde os slides finais serão montados.
+Roteiro em `apresentacao/roteiro_slides.md` e base dos slides em `apresentacao/T1_Sistema_Recomendacao.pptx`. A base segue o modelo simples da usuária no Canva, onde os slides finais serão montados.
 
-**Estrutura**, na ordem dos itens do enunciado. O item de cada slide aparece no rodapé, e o slide 2 é o roteiro.
+**Código da apresentação**, entregue junto, todo em `scripts/` e com o tema em `src/tema_apresentacao.py`:
 
-| Item do enunciado | Slides |
+| Script | O que faz |
 |---|---|
-| a. Capa | 1 |
-| b. Descrição do sistema | 3 |
-| c. Base de dados | 4 a 6 |
-| d. Conceitos teóricos do modelo | 7 a 14: a escolha da técnica, a ideia em quatro perguntas e o método passo a passo |
-| e. Tratamento dos dados | 15: duplicados e ausentes, com o tratamento de cada um, e o vetor de conteúdo |
-| f. Treino e teste | 16 |
-| g. Estimação do modelo | 17 (o que foi estimado e os pesos) e 18 (escolha dos pesos e ablação) |
-| h. Performance do modelo | 19 (as métricas estudadas em aula) a 21 |
-| i. Interface nos 3 cenários | 22 (demonstração) e 23 |
-| Conclusões | 24 |
-| Apêndice | 7 slides: sazonalidade, escolhas dos cenários 2 e 3, curvas ROC e previsão de nota, telas inteiras |
+| `graficos_apresentacao.py` | Constrói os gráficos dos slides em `apresentacao/graficos/`, a partir de `data/processed/` e `modelos/`, no tema da apresentação (fundo branco; terracota, sálvia e mostarda) |
+| `capturar_telas.py` | Salva as telas da interface em `figuras/50_` a `53_` |
+| `gerar_ppt.py` | Monta os slides com os gráficos, as telas e as notas do orador |
+
+Os gráficos de estimação e de performance refazem as contas dos notebooks 03 e 04 com as mesmas funções, os modelos congelados e as mesmas sementes, e o script confere os números (por exemplo, conversão@10 de 0,0739 na validação e de 0,0520 no teste) antes de desenhar. Nada é escolhido nesse script. Os gráficos do relatório (`figuras/10_` a `43_`) continuam saindo dos notebooks, no estilo de `src/graficos.py`.
+
+**Estrutura**, na ordem dos itens do enunciado, em seções numeradas de 1 a 9 (o rodapé de cada slide indica a seção). Regra, a pedido da usuária: **um assunto e um visual por slide** (uma figura, uma tabela, cartões ou números grandes), no máximo duas linhas curtas de texto, corpo de 18 pt ou mais; o detalhe vai para as notas do orador.
+
+| Seção (item do enunciado) | Slides |
+|---|---|
+| Capa (a) e roteiro | 1 e 2 |
+| 1 · Descrição do sistema (b) | 3 e 4 |
+| 2 · Base de dados (c) | 5 a 10 |
+| 3 · Conceitos teóricos do modelo (d) | 11 a 23 |
+| 4 · Tratamento dos dados (e) | 24 e 25 |
+| 5 · Treino e teste (f) | 26 e 27 |
+| 6 · Estimação do modelo (g) | 28 a 31 |
+| 7 · Performance do modelo (h) | 32 a 35 |
+| 8 · Interface nos 3 cenários (i) | 36 a 40 |
+| 9 · Conclusões | 41 |
+| Apêndice | 42 a 54 |
 
 **O método, de forma didática (item d):** a ideia em quatro perguntas (é parecido com o que você gostou? é bom? é perto? muita gente vai?) e cinco passos. (1) O local vira uma lista de características, com um exemplo de três locais e os pesos do TF-IDF (1,08 para Entrega, 7,31 para Loja de pretzel). (2) O usuário vira um perfil, com a conta "nota − média" de uma usuária fictícia e o perfil real do Usuário #12.369. (3) "Parecido" é o cosseno, com os dois candidatos da usuária fictícia calculados no próprio gerador. (4) Os escores, com o efeito da média bayesiana (2 avaliações com média 5 dão 4,18; 400 com média 4,7 dão 4,65) e a queda da localização com a distância. (5) A soma num caso real: para o Usuário #12.369, o The Depot Restaurant soma 0,724 e fica em 1º; o Bar J Chuckwagon Suppers, com o melhor escore da base, fica em 375º de 1.508 porque está longe (localização de 0,26). Um último slide mostra que os três cenários usam a mesma conta.
 
@@ -1020,7 +1030,7 @@ Roteiro em `apresentacao/roteiro_slides.md` e base dos slides em `apresentacao/T
 
 **Conferências:** o validador do arquivo passou; cada slide foi renderizado pelo PowerPoint e revisado; o texto não cita nenhuma métrica fora das vistas em aula; todos os slides têm notas do orador.
 
-**Limitações:** as fontes do modelo (Montserrat e Inter) não estão instaladas, e a base usa Century Gothic e Arial; os integrantes ainda não constam da capa; com 24 slides principais, a fala fica em cerca de 35 segundos por slide para 15 minutos, então o item d (8 slides) pode precisar de cortes na versão final.
+**Limitações:** as fontes do modelo (Montserrat e Inter) não estão instaladas, e a base usa Century Gothic e Arial; os integrantes ainda não constam da capa; com 41 slides principais, a fala fica em cerca de 20 segundos por slide para 15 minutos; os slides são curtos de propósito.
 
 ## 8. Entrega
 
@@ -1035,3 +1045,5 @@ Roteiro em `apresentacao/roteiro_slides.md` e base dos slides em `apresentacao/T
 - **2026-11-05:** a seção 6 registra a interface com quatro abas; a aba Demonstração foi pedida pela usuária durante a Fase 5.
 - **2026-11-05:** a seção 7 registra a base dos slides, gerada a partir do modelo da usuária no Canva.
 - **2026-11-05:** a seção 7 passou a seguir a ordem do enunciado, com o item de cada slide no rodapé, e o item d ganhou a explicação didática do método, a pedido da usuária.
+- **2026-11-05:** a seção 7 registra a divisão em slides curtos (um assunto e um visual por slide), a pedido da usuária.
+- **2026-11-05:** a seção 7 registra o código dos gráficos da apresentação (`scripts/graficos_apresentacao.py`) e o tema em `src/tema_apresentacao.py`.

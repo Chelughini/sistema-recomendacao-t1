@@ -215,3 +215,19 @@ O `.pptx` gerado passou a ter 24 slides principais, na ordem dos itens do enunci
 1. Capa · 2. Roteiro (os itens b a i) · 3. O sistema (b) · 4–6. Base (c) · 7. Por que conteúdo e escores de produto (d) · 8. O método em uma ideia: quatro perguntas (d) · 9–13. Passos 1 a 5: o local vira vetor, o usuário vira perfil, o cosseno, os escores e a soma num exemplo real (d) · 14. Os três cenários usam a mesma conta (d) · 15. Tratamento: duplicados e ausentes (e) · 16. Treino e teste (f) · 17. O que foi estimado (g) · 18. Escolha dos pesos e ablação (g) · 19. Métricas estudadas em aula (h) · 20–21. Resultados (h) · 22. Demonstração (i) · 23. A interface nos três cenários (i) · 24. Conclusões.
 
 Para caber em 15 minutos, os candidatos a cortar ou juntar são os slides 5 e 6 (base), 7 (escolha da técnica, que pode ir ao apêndice) e 11 (cosseno, que pode se juntar ao 10).
+
+## Revisão de 2026-11-05: slides curtos
+
+A pedido da usuária, um assunto e um visual por slide, com no máximo duas linhas curtas de texto e corpo de 18 pt ou mais; o detalhe vai para as notas do orador. São 41 slides principais (cerca de 20 segundos cada em 15 minutos) e 13 de apêndice:
+
+- **1–2.** Capa · roteiro (seções 1 a 9).
+- **3–4. Sistema:** as três situações · como o sistema decide (5 etapas).
+- **5–10. Base:** a base em números · as notas são altas · pouco histórico por pessoa · atenção concentrada · categorias · cidades em ilhas.
+- **11–23. Teoria:** por que conteúdo e escores de produto · o método em quatro perguntas · a pontuação · passo 1, o local vira uma lista · características raras pesam mais · passo 2, o perfil (notas da Ana) · o perfil da Ana · o perfil de um usuário real · passo 3, o cosseno · passo 4, o escore · passo 4, perto e conhecido · passo 5, a soma decide a ordem · os três cenários usam a mesma conta.
+- **24–25. Tratamento:** duplicados e ausentes · o que entra no vetor.
+- **26–27. Treino e teste:** divisão no tempo · quem é medido.
+- **28–31. Estimação:** o que foi estimado · os pesos de cada cenário · como os pesos foram escolhidos · o papel de cada componente.
+- **32–35. Performance:** as métricas · usuário antigo · usuário novo · local novo.
+- **36–40. Interface:** roteiro da demonstração · prateleiras · usuário antigo · usuário novo · local novo.
+- **41.** Conclusões.
+- **Apêndice:** o que os dados mostraram · vizinhos por conteúdo · avaliações por ano e por mês · curvas ROC · previsão de nota · estabilidade · cenários 2 e 3 na validação · telas inteiras.

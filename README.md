@@ -20,11 +20,25 @@ Para abrir a interface, depois do notebook 03:
 streamlit run app.py
 ```
 
-Para refazer as telas de `figuras/50_` a `53_`, com o app aberto na porta 8501:
+### Material da apresentação
+
+Tudo o que foi criado para a apresentação está em `scripts/`, com o tema visual em `src/tema_apresentacao.py`:
+
+| Script | O que faz | Saída |
+|---|---|---|
+| `scripts/graficos_apresentacao.py` | Constrói os gráficos dos slides a partir dos dados e dos modelos, no tema da apresentação | `apresentacao/graficos/` |
+| `scripts/capturar_telas.py` | Salva as telas da interface, com o app aberto na porta 8501 | `figuras/50_` a `53_` |
+| `scripts/gerar_ppt.py` | Monta os slides com os gráficos e as telas | `apresentacao/T1_Sistema_Recomendacao.pptx` |
+
+Na ordem, depois do notebook 03:
 
 ```bash
+python scripts/graficos_apresentacao.py
 python scripts/capturar_telas.py
+python scripts/gerar_ppt.py
 ```
+
+`graficos_apresentacao.py` aceita as partes que se quer refazer (`base`, `teoria`, `divisao`, `estimacao`, `performance`); a parte `performance` recalcula o teste com os modelos congelados e leva alguns minutos.
 
 Para rodar os testes:
 
