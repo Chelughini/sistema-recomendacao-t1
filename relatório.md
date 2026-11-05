@@ -841,7 +841,127 @@ O modelo foi reajustado em `treino_total` (343.697 avaliações, 140.895 perfis,
 
 ## 5. Avaliação final
 
-*A preencher na Fase 4.*
+O notebook `04_avaliacao.ipynb` só carrega a configuração e os modelos congelados e mede tudo no **teste** (85.925 avaliações, de 31/03/2020 a 04/09/2021), usado uma única vez. As funções de avaliação estão em `src/avaliacao.py`. Antes da execução no teste, elas foram ensaiadas na validação, numa cópia temporária do notebook, e reproduziram os números do notebook do modelo. O próprio notebook 04 roda as mesmas funções na validação para a comparação validação × teste. Intervalos de 95% por bootstrap de usuários.
+
+### 5.1 Cenário 1: usuário antigo
+
+5.663 usuários antigos e 1.525 candidatos; a AUC de gosto vale para 1.674 usuários.
+
+| Ordenação | Conversão@10 | AUC de gosto | Conversão − modelo (IC 95%) | Gosto − modelo (IC 95%) | Cobertura do catálogo |
+|---|---|---|---|---|---|
+| **Modelo** | **0,0520 (0,0498 a 0,0542)** | **0,5542 (0,5372 a 0,5708)** | — | — | 46,1% |
+| Aleatório | 0,0020 | 0,4967 | −0,0500 | −0,0575 | 100% |
+| Popularidade | 0,0144 | 0,4584 | −0,0376 | −0,0957 | 1,4% |
+| Só escore | 0,0028 | 0,6943 | −0,0492 | +0,1401 | 1,0% |
+| Só local | 0,0298 | 0,4876 | −0,0222 | −0,0665 | 95,7% |
+| Popularidade + local | 0,0532 | 0,4516 | empate | −0,1026 (−0,1164 a −0,0883) | 33,2% |
+| Sem conteúdo | 0,0525 | 0,5488 | empate | empate | 41,6% |
+| Vizinhos por item | 0,0599 | 0,4477 | +0,0079 (0,0058 a 0,0101) | −0,1065 | 60,2% |
+| Vizinhos por item, combinado | 0,0651 | 0,4887 | +0,0131 (0,0114 a 0,0148) | −0,0654 | 52,9% |
+| PageRank personalizado | 0,0637 | 0,4493 | +0,0117 (0,0100 a 0,0134) | −0,1048 | 48,5% |
+
+![Cenário 1 no teste](figuras/40_cenario1.png)
+
+O modelo empata na conversão com a lista óbvia (popularidade + local) e com a versão sem conteúdo. Ele é o único, entre as ordenações que convertem, com AUC de gosto acima do acaso. As técnicas colaborativas convertem até 25% mais, mas ficam abaixo do acaso no gosto. Na sensibilidade com usuários com 1 ou mais avaliações no treino (9.949), o modelo converte 0,0438, em empate com popularidade + local e com sem conteúdo, e fica 0,0958 acima de popularidade + local na AUC de gosto.
+
+Acompanhamento do modelo: consumo@10 de 0,0582, AUC de consumo de 0,9114, novidade de 9,14, serendipidade de 0,0157 e diversidade de 0,6912.
+
+### 5.2 Cenário 2: usuário novo
+
+6.783 usuários novos com 2 ou mais avaliações no teste (1.255 com AUC de gosto).
+
+| Método | Conversão@10 | AUC de gosto | Cobertura do catálogo |
+|---|---|---|---|
+| 1. Popularidade | 0,0097 | 0,4916 | 0,7% |
+| 2. Escore | 0,0020 | 0,6739 | 0,7% |
+| 3. Escore + popularidade | 0,0097 | 0,5591 | 0,7% |
+| 4. Local + escore + popularidade | 0,0450 | 0,5623 | 27,0% |
+| **5. Modelo: + categorias com peso** | **0,0452 (0,0435 a 0,0471)** | **0,5598 (0,5376 a 0,5806)** | **30,6%** |
+| 5. + categorias como filtro | 0,0232 | 0,4983 | 81,6% |
+| 6. + local de exemplo, mesmo peso | 0,0453 | 0,5564 | 30,4% |
+
+![Cenário 2 no teste](figuras/41_cenario2.png)
+
+Como na validação, a categoria declarada com peso empata com o método 4 e amplia o catálogo, e como filtro derruba a conversão à metade. A cobertura de usuários é de 100% em todos os métodos.
+
+### 5.3 Cenário 3: local novo para usuário antigo
+
+| Origem | Ordenação | AUC de consumo | Conversão@10 | AUC de consumo − só local (IC 95%) |
+|---|---|---|---|---|
+| Naturais (100 locais, 729 usuários) | Só local | 0,9173 | 0,0881 | — |
+| | **Modelo (α = 0,5)** | **0,9209** | **0,0867** | **+0,0036 (−0,0008 a 0,0076), empate** |
+| | Só conteúdo | 0,5402 | 0,0155 | −0,3772 |
+| | Aleatório | 0,4779 | 0,0111 | −0,4394 |
+| Simulados (100 locais, 1.107 usuários) | Só local | 0,8770 | 0,0771 | — |
+| | **Modelo** | **0,8814** | **0,0793** | **+0,0044 (0,0002 a 0,0084)** |
+
+![Cenário 3 no teste](figuras/42_cenario3.png)
+
+- **O ganho do conteúdo nos locais novos reais não se confirmou:** na validação, ele somava 0,0119 de AUC de consumo; no teste, empata com o só local, também na conversão. Nos simulados, que têm metadados mais ricos, ele continua ajudando pouco, fora do empate.
+- **Saída A (local → usuários):** AUC por local de 0,8938 nos naturais, em empate com o só local (+0,0056, IC 95% de −0,0016 a 0,0127, 88 locais); 0,8954 nos simulados, +0,0112 (IC 95% de 0,0052 a 0,0167).
+- **Saída B:** o local novo natural convertido fica em 72º, em mediana, na lista do cenário 1; só 3,1% chegam ao top-10, e 3,7% das listas têm algum local novo.
+- **Cota:** as listas que acertam um local novo natural passam de 21 para 126, e os locais novos listados, de 42 para 95 de 100, com −0,0014 de conversão@10 (de 0,0496 para 0,0482). Nos simulados, de 15 para 151 listas, com −0,0009.
+- **Cobertura do espaço de itens novos:** conteúdo 100%; vizinhos por item e PageRank 0%.
+
+### 5.4 Curvas ROC
+
+![Curvas ROC](figuras/43_curvas_roc.png)
+
+A curva de gosto é feita de degraus porque a maioria dos usuários tem um ou dois locais bons e um ou dois ruins no teste. Ela começa na fração de usuários em que todos os bons ficam acima dos ruins: cerca de 46% no modelo, 40% no combinado e 36% em popularidade + local. Na curva de consumo dos locais novos, o modelo e o só local quase se sobrepõem.
+
+### 5.5 Previsão de nota
+
+| Previsão | MAE | MSE | RMSE |
+|---|---|---|---|
+| Média global | 0,8982 | 1,2854 | 1,1337 |
+| Escore | 0,8524 | 1,1755 | 1,0842 |
+| **Escore + viés** | **0,7751 (0,7623 a 0,7880)** | **1,0502** | **1,0248 (1,0069 a 1,0418)** |
+
+Em 21.121 avaliações de 6.335 usuários antigos, a ordem é a da validação, com erros um pouco maiores. A correlação de rankings do modelo é de 0,0721 (Spearman) e 0,0619 (tau-b de Kendall), a maior entre as ordenações comparadas.
+
+### 5.6 Exemplos e estabilidade temporal
+
+Nos dois usuários sorteados, nenhum dos 10 locais recomendados foi avaliado no teste, embora as listas sejam plausíveis: um deles avaliou depois, com nota 5, um restaurante que aparece na lista do outro. É a limitação da conversão offline.
+
+| Período do teste | Avaliações | Usuários | Conversão@10 do modelo | Popularidade + local |
+|---|---|---|---|---|
+| Primeiro ano (até 31/03/2021) | 74.081 | 5.219 | 0,0504 | 0,0521 |
+| Depois | 11.844 | 1.326 | 0,0235 | 0,0224 |
+
+A queda atinge as duas ordenações e acompanha a coleta rarefeita no fim da base.
+
+### 5.7 Validação × teste
+
+| Cenário | Métrica | Validação | Teste |
+|---|---|---|---|
+| 1 | Conversão@10 | 0,0739 | 0,0520 |
+| 1 | AUC de gosto | 0,5850 | 0,5542 |
+| 2 | Conversão@10 | 0,0484 | 0,0452 |
+| 2 | AUC de gosto | 0,5541 | 0,5598 |
+| 3, naturais | AUC de consumo | 0,9314 | 0,9209 |
+| 3, naturais | Conversão@10 | 0,0939 | 0,0867 |
+| 3, simulados | AUC de consumo | 0,8858 | 0,8814 |
+| Previsão de nota | RMSE | 0,9871 | 1,0248 |
+
+### 5.8 Conclusões e limitações
+
+**Conclusões:**
+
+1. O sistema atende os três cenários com uma técnica, com 100% de cobertura de usuários e de locais novos.
+2. Entre as ordenações que convertem, o modelo é o único com AUC de gosto acima do acaso nos cenários 1 e 2.
+3. O conteúdo pesa pouco nas métricas principais: empata nos cenários 1 e 2 e só amplia o catálogo; no cenário 3, ajudou na validação e nos simulados, mas empatou com o só local nos locais novos reais do teste.
+4. Localização e popularidade respondem pela conversão; o escore, pelo gosto.
+
+**Limitações:**
+
+- A conversão offline é uma aproximação: um local não avaliado pode só ser desconhecido.
+- A medida favorece popularidade e proximidade.
+- O sinal de gosto vem da qualidade do local, com pouca personalização (correlação de rankings de 0,07).
+- A AUC de gosto usa só os usuários com notas boas e ruins no período.
+- Os metadados são de 2021, e os locais simulados são mais fáceis que os novos reais.
+- O teste começa na pandemia, e a coleta rareia no fim da base.
+- Vizinhos por item convertem até 25% mais para usuários antigos; a técnica foi mantida porque o enunciado pede uma técnica, só o conteúdo atende os três cenários e só ele acerta o gosto.
+- O ganho do conteúdo nos locais novos reais não se confirmou no teste.
 
 ## 6. Interface
 

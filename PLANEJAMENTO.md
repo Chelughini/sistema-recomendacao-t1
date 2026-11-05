@@ -502,16 +502,16 @@ Fora da técnica escolhida, para mostrar o que se ganha e o que se perde.
 
 **Só carrega a configuração e os modelos. Nenhuma decisão aqui. Roda uma vez** (regra 5).
 
-- [ ] 1. Definição das métricas e conferência da configuração.
-- [ ] 2. **Cenário 1:** modelo × aleatório, popularidade, só escore, só local, popularidade + local, sem conteúdo, vizinhos por item e PageRank personalizado. Todas as métricas da seção A.3, com intervalos. Sensibilidade: usuários com ≥ 1 avaliação no treino. Figura `40_cenario1`.
-- [ ] 3. **Cenário 2:** os métodos da seção 3.5. Figura `41_cenario2`.
-- [ ] 4. **Cenário 3:** naturais como principal, simulados à parte; saídas A e B; cobertura do espaço de itens. Figura `42_cenario3`.
-- [ ] 5. **Curvas ROC:** de gosto (cenário 1) e de consumo (cenário 3). Figura `43_curvas_roc`.
-- [ ] 6. **Previsão de nota:** MAE, MSE, RMSE; correlação de rankings.
-- [ ] 7. **Qualidade da lista:** novidade, serendipidade, diversidade, cobertura do catálogo e dos espaços. Dois exemplos: recomendado × avaliado no teste.
-- [ ] 8. **Estabilidade temporal:** conversão do cenário 1 no primeiro ano do teste (pandemia) × depois.
-- [ ] 9. **Validação × teste:** as duas métricas principais, lado a lado.
-- [ ] 10. **Conclusões e limitações, obrigatórias:**
+- [x] 1. Definição das métricas e conferência da configuração.
+- [x] 2. **Cenário 1:** modelo × aleatório, popularidade, só escore, só local, popularidade + local, sem conteúdo, vizinhos por item e PageRank personalizado. Todas as métricas da seção A.3, com intervalos. Sensibilidade: usuários com ≥ 1 avaliação no treino. Figura `40_cenario1`.
+- [x] 3. **Cenário 2:** os métodos da seção 3.5. Figura `41_cenario2`.
+- [x] 4. **Cenário 3:** naturais como principal, simulados à parte; saídas A e B; cobertura do espaço de itens. Figura `42_cenario3`.
+- [x] 5. **Curvas ROC:** de gosto (cenário 1) e de consumo (cenário 3). Figura `43_curvas_roc`.
+- [x] 6. **Previsão de nota:** MAE, MSE, RMSE; correlação de rankings.
+- [x] 7. **Qualidade da lista:** novidade, serendipidade, diversidade, cobertura do catálogo e dos espaços. Dois exemplos: recomendado × avaliado no teste.
+- [x] 8. **Estabilidade temporal:** conversão do cenário 1 no primeiro ano do teste (pandemia) × depois.
+- [x] 9. **Validação × teste:** as duas métricas principais, lado a lado.
+- [x] 10. **Conclusões e limitações, obrigatórias:**
   - conversão offline é aproximação: local não avaliado pode ser só desconhecido;
   - a medida favorece popularidade e proximidade;
   - o sinal de gosto vem da qualidade do local, com pouca personalização;
@@ -615,3 +615,4 @@ Cerca de 20 a 25 slides. Números lidos das saídas dos notebooks.
 - **2026-11-04 — Seção 3.8 concluída.** Em 31.767 avaliações de 6.660 usuários antigos da validação, em locais do treino: RMSE de 1,0960 (média global), 1,0427 (escore) e 0,9871 (escore + viés); MAE de 0,8576, 0,8225 e 0,7553. Cada passo melhora com intervalo longe de zero (escore − média: −0,0351 de MAE; viés − escore: −0,0672). Os valores ficam perto dos da tentativa anterior (~1,09, ~1,04 e ~0,98). A correlação de rankings dos finalistas já estava na seção 3.3. Próximo: seção 3.9.
 - **2026-11-04 — Seção 3.9 concluída, falta o ponto de decisão.** Teoria com fórmulas no início do notebook (conteúdo, TF-IDF, cosseno, perfil com os dois centros, escores, local, combinação, por que ordenar). Figura `30_escore_bayesiano` (escore congelado × média simples, cor = avaliações em escala log): os 194 locais com menos de 10 avaliações vão de 1 a 5 na média e de 3,54 a 4,34 no escore. Exemplos: Usuário A (Cheyenne) e Usuário B (Evanston, 23 avaliações), com histórico, tokens do perfil e top-10 explicado; o exemplo de usuário novo do cenário 2 passou a se chamar Usuário C. **Congelado** em `modelos/configuracao.json`; reajuste em `treino_total` (343.697 avaliações, C = 4,132, m = 36,8, 100 locais novos) e `treino_total_c3` (318.092, 200 locais novos), gravados em `modelos/*.joblib` (122 e 115 MB), que ficam fora do git por terem identificadores de usuários (`.gitignore` atualizado). A tabela de métricas já estava na seção de métricas. Próximo: ponto de decisão com a usuária e, depois, a Fase 4.
 - **2026-11-04 — Ponto de decisão:** a usuária confirmou a configuração congelada e a técnica, ciente de que os vizinhos combinados convertem 17% mais no cenário 1. Próximo: Fase 4, com o teste rodando uma única vez.
+- **2026-11-04 — Fase 4 concluída; o teste rodou uma única vez.** `src/avaliacao.py` (`cenario1`, `cenario2`, `cenario3`, `erros_previsao`, `pares_roc_gosto`, `pares_roc_consumo`) e `testes/test_avaliacao.py`; 238 testes passam. **Ensaio:** as funções foram rodadas antes na validação (script e uma cópia temporária do notebook, apagada) e reproduziram o 03 ao centavo; o ensaio pegou só ajustes de apresentação (período vazio, plural, casas decimais). **Teste:** cenário 1, modelo 0,0520 de conversão@10 e 0,5542 de AUC de gosto (5.663 usuários); empata na conversão com popularidade + local e com sem conteúdo; vizinhos combinados 0,0651 (+25%), todos os colaborativos abaixo do acaso no gosto. Cenário 2, 0,0452 e 0,5598 (6.783 usuários), empate com o método 4. Cenário 3, naturais: AUC de consumo de 0,9209 contra 0,9173 do só local, **empate** (+0,0036, IC de −0,0008 a 0,0076), ao contrário da validação; simulados +0,0044, fora do empate. Cota: listas com local novo convertido de 21 para 126, com −0,0014 de conversão. Previsão: RMSE de 1,0248 (escore + viés). Estabilidade: conversão de 0,0504 no primeiro ano e 0,0235 depois, nas duas ordenações. Figuras `40_` a `43_` conferidas; a curva ROC de gosto tem degraus, explicados na leitura. **Desvios:** (1) o notebook 04 foi criado por um script de uso único, que aborta se o arquivo existir, e as leituras foram acrescentadas por script que confere âncoras; (2) a saída B usa os usuários com conversão entre os candidatos, e não uma amostra de 10.000, e na validação dá 3,4% no top-10, contra 3,1% do notebook 03; (3) os pesos do método 3 do cenário 2 (0 / 0,3 / 0 / 0,7) estão escritos no notebook 04, lidos da saída do 03. Nada foi ajustado depois do teste. Próximo: Fase 5 (interface).
