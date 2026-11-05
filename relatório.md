@@ -998,27 +998,29 @@ Código em `app.py` (Streamlit), funções sem Streamlit em `src/interface.py`, 
 
 Roteiro em `apresentacao/roteiro_slides.md` e base dos slides em `apresentacao/T1_Sistema_Recomendacao.pptx`, gerada por `scripts/gerar_ppt.py`. A base segue o modelo simples da usuária no Canva, onde os slides finais serão montados.
 
-**Estrutura, para cerca de 15 minutos:**
+**Estrutura**, na ordem dos itens do enunciado. O item de cada slide aparece no rodapé, e o slide 2 é o roteiro.
 
 | Item do enunciado | Slides |
 |---|---|
 | a. Capa | 1 |
-| b. O sistema | 2 |
-| c. A base | 3 a 5 |
-| d. Teoria do modelo | 6 a 8 |
-| e. Tratamento dos dados | 9 |
-| f. Treino e teste | 10 |
-| g. Estimação | 11 e 12 |
-| h. Performance | 13 e 14 |
-| i. Interface | 15 (demonstração) e 16 (os três cenários) |
-| Conclusões | 17 |
-| Apêndice | sazonalidade, escolhas dos cenários 2 e 3, curvas ROC e previsão de nota, telas inteiras |
+| b. Descrição do sistema | 3 |
+| c. Base de dados | 4 a 6 |
+| d. Conceitos teóricos do modelo | 7 a 14: a escolha da técnica, a ideia em quatro perguntas e o método passo a passo |
+| e. Tratamento dos dados | 15: duplicados e ausentes, com o tratamento de cada um, e o vetor de conteúdo |
+| f. Treino e teste | 16 |
+| g. Estimação do modelo | 17 (o que foi estimado e os pesos) e 18 (escolha dos pesos e ablação) |
+| h. Performance do modelo | 19 (as métricas estudadas em aula) a 21 |
+| i. Interface nos 3 cenários | 22 (demonstração) e 23 |
+| Conclusões | 24 |
+| Apêndice | 7 slides: sazonalidade, escolhas dos cenários 2 e 3, curvas ROC e previsão de nota, telas inteiras |
+
+**O método, de forma didática (item d):** a ideia em quatro perguntas (é parecido com o que você gostou? é bom? é perto? muita gente vai?) e cinco passos. (1) O local vira uma lista de características, com um exemplo de três locais e os pesos do TF-IDF (1,08 para Entrega, 7,31 para Loja de pretzel). (2) O usuário vira um perfil, com a conta "nota − média" de uma usuária fictícia e o perfil real do Usuário #12.369. (3) "Parecido" é o cosseno, com os dois candidatos da usuária fictícia calculados no próprio gerador. (4) Os escores, com o efeito da média bayesiana (2 avaliações com média 5 dão 4,18; 400 com média 4,7 dão 4,65) e a queda da localização com a distância. (5) A soma num caso real: para o Usuário #12.369, o The Depot Restaurant soma 0,724 e fica em 1º; o Bar J Chuckwagon Suppers, com o melhor escore da base, fica em 375º de 1.508 porque está longe (localização de 0,26). Um último slide mostra que os três cenários usam a mesma conta.
 
 **Demonstração:** roteiro ao vivo de cerca de 2min30, com o app aberto antes da aula: a aba Demonstração com o Usuário #12.369, o usuário novo de Cheyenne com cafeteria e um local novo real. As telas do slide 16 e do apêndice servem de reserva. Usar ou não a demonstração ao vivo ainda será decidido.
 
 **Conferências:** o validador do arquivo passou; cada slide foi renderizado pelo PowerPoint e revisado; o texto não cita nenhuma métrica fora das vistas em aula; todos os slides têm notas do orador.
 
-**Limitações:** as fontes do modelo (Montserrat e Inter) não estão instaladas, e a base usa Century Gothic e Arial; os integrantes ainda não constam da capa.
+**Limitações:** as fontes do modelo (Montserrat e Inter) não estão instaladas, e a base usa Century Gothic e Arial; os integrantes ainda não constam da capa; com 24 slides principais, a fala fica em cerca de 35 segundos por slide para 15 minutos, então o item d (8 slides) pode precisar de cortes na versão final.
 
 ## 8. Entrega
 
@@ -1032,3 +1034,4 @@ Roteiro em `apresentacao/roteiro_slides.md` e base dos slides em `apresentacao/T
 - **2026-11-04:** na seção 4.4, os pesos do usuário novo e do local novo deixaram de ser provisórios (seções 4.5 e 4.6), e a lista do usuário antigo ganhou a cota de 1 local novo.
 - **2026-11-05:** a seção 6 registra a interface com quatro abas; a aba Demonstração foi pedida pela usuária durante a Fase 5.
 - **2026-11-05:** a seção 7 registra a base dos slides, gerada a partir do modelo da usuária no Canva.
+- **2026-11-05:** a seção 7 passou a seguir a ordem do enunciado, com o item de cada slide no rodapé, e o item d ganhou a explicação didática do método, a pedido da usuária.

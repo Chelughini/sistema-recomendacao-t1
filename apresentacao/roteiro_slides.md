@@ -207,3 +207,11 @@ O tempo é de cerca de 15 minutos. Com uns 2 minutos e meio de demonstração, s
 2. **Template:** o modelo simples da usuária no Canva (`modelo_ppt_canva_01.pdf`): fundo bege, títulos em terracota, subtítulos em sálvia, cartões brancos. O PPT gerado serve de base para os slides finais, montados no Canva. Fontes: Century Gothic e Arial no lugar de Montserrat e Inter, que não estão instaladas.
 3. **Tempo:** cerca de 15 minutos → versão de 16 slides acima, com apêndice.
 4. **Demonstração:** incluída (slide 15, com roteiro ao vivo em 3 passos, e slide 16 e apêndice com as telas de reserva); usar ou não ao vivo ainda será decidido. Recomendação: ao vivo, com o app aberto antes, e vídeo ou telas de reserva.
+
+## Revisão de 2026-11-05: ordem do enunciado e método didático
+
+O `.pptx` gerado passou a ter 24 slides principais, na ordem dos itens do enunciado, com o item no rodapé de cada slide:
+
+1. Capa · 2. Roteiro (os itens b a i) · 3. O sistema (b) · 4–6. Base (c) · 7. Por que conteúdo e escores de produto (d) · 8. O método em uma ideia: quatro perguntas (d) · 9–13. Passos 1 a 5: o local vira vetor, o usuário vira perfil, o cosseno, os escores e a soma num exemplo real (d) · 14. Os três cenários usam a mesma conta (d) · 15. Tratamento: duplicados e ausentes (e) · 16. Treino e teste (f) · 17. O que foi estimado (g) · 18. Escolha dos pesos e ablação (g) · 19. Métricas estudadas em aula (h) · 20–21. Resultados (h) · 22. Demonstração (i) · 23. A interface nos três cenários (i) · 24. Conclusões.
+
+Para caber em 15 minutos, os candidatos a cortar ou juntar são os slides 5 e 6 (base), 7 (escolha da técnica, que pode ir ao apêndice) e 11 (cosseno, que pode se juntar ao 10).

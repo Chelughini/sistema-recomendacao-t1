@@ -9,6 +9,7 @@ e o texto, Arial; no Canva, volta-se às originais. Os números vêm do `relató
 
 from pathlib import Path
 
+import numpy as np
 from lxml import etree
 from PIL import Image
 from pptx import Presentation
@@ -163,10 +164,30 @@ def destaque(slide, x, y, w, valor, rotulo, cor=TERRACOTA, tamanho=34):
 
 
 # ---------------------------------------------------------------- Layouts do modelo
+ITENS = {
+    "b": "b. Descrição do sistema",
+    "c": "c. Base de dados",
+    "d": "d. Conceitos teóricos do modelo",
+    "e": "e. Tratamento dos dados",
+    "f": "f. Treino e teste",
+    "g": "g. Estimação do modelo",
+    "h": "h. Performance do modelo",
+    "i": "i. Interface nos 3 cenários",
+}
+_ITEM = {"atual": None}
+
+
+def item(chave):
+    """Define o item do enunciado dos próximos slides; ele aparece no rodapé."""
+    _ITEM["atual"] = ITENS.get(chave, chave)
+
+
 def novo_slide(apresentacao, titulo, mensagem=None):
-    """Layout de conteúdo: título em terracota e, abaixo, a mensagem do slide em sálvia."""
+    """Layout de conteúdo: título em terracota, a mensagem em sálvia e o item do enunciado no rodapé."""
     slide = apresentacao.slides.add_slide(apresentacao.slide_layouts[6])
     _fundo(slide)
+    if _ITEM["atual"]:
+        texto(slide, LARGURA - MARGEM - 5.0, 7.16, 5.0, 0.25, _ITEM["atual"], tamanho=11, cor=SUAVE, alinhar=PP_ALIGN.RIGHT, espaco=0)
     texto(slide, MARGEM, 0.28, LARGURA - 2 * MARGEM, 0.75, titulo, tamanho=36, cor=TERRACOTA, fonte=FONTE_TITULO, negrito=True, espaco=0)
     if mensagem:
         texto(slide, MARGEM, 0.98, LARGURA - 2 * MARGEM, 0.5, mensagem, tamanho=18, cor=SALVIA, fonte=FONTE_TITULO, negrito=True, espaco=0)
@@ -227,6 +248,7 @@ def preparar_recortes():
     recortes = {
         "demo_perfil.png": (demo, (360, 300, 1740, 800)),
         "demo_prateleira.png": (demo, (360, 1180, 1740, 1520)),
+        "demo_gosto.png": (demo, (360, 470, 1170, 790)),
         "tela_antigo.png": (Image.open(FIGURAS / "51_usuario_antigo.png"), (370, 640, 1140, 1090)),
         "tela_novo.png": (Image.open(FIGURAS / "52_usuario_novo.png"), (370, 250, 1180, 1010)),
         "tela_local.png": (Image.open(FIGURAS / "53_local_novo.png"), (370, 330, 1250, 1150)),
@@ -255,7 +277,29 @@ def capa(p):
     notas(slide, "Apresentar o grupo e o tema: um sistema que recomenda restaurantes, cafés e bares de Wyoming a partir das avaliações do Google, com a técnica de conteúdo e escores de produto.")
 
 
+def roteiro(p):
+    item(None)
+    s = novo_slide(p, "Roteiro", "A apresentação segue os itens pedidos no enunciado")
+    nomes = [
+        ("b", "Descrição do sistema"), ("c", "Base de dados"), ("d", "Conceitos teóricos do modelo"),
+        ("e", "Tratamento dos dados"), ("f", "Treino e teste"), ("g", "Estimação do modelo"),
+        ("h", "Performance do modelo"), ("i", "Interface nos 3 cenários"), ("→", "Conclusões"),
+    ]
+    cores = [TERRACOTA, SALVIA, MOSTARDA]
+    largura = (LARGURA - 2 * MARGEM - 0.6) / 3
+    altura = (BASE_CARTAO - TOPO_CARTAO - 0.6) / 3
+    for k, (letra, nome) in enumerate(nomes):
+        coluna, linha = k % 3, k // 3
+        x = MARGEM + coluna * (largura + 0.3)
+        y = TOPO_CARTAO + linha * (altura + 0.3)
+        cartao(s, x, y, largura, altura)
+        circulo_numerado(s, x + 0.3, y + (altura - 0.6) / 2, letra, cores[k % 3], d=0.6)
+        texto(s, x + 1.1, y, largura - 1.3, altura, nome, tamanho=18, negrito=True, fonte=FONTE_TITULO, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+    notas(s, "A apresentação segue a ordem dos itens do enunciado, de b a i; o item a é a capa. O rodapé de cada slide indica o item que ele cobre.")
+
+
 def sistema(p):
+    item("b")
     s = novo_slide(p, "O sistema", "Recomendar onde comer a quem avalia no Google, em três situações")
     (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Os três cenários", "Como o sistema decide"], proporcao=0.47)
     cenarios = [
@@ -285,6 +329,7 @@ def sistema(p):
 
 
 def base(p):
+    item("c")
     s = novo_slide(p, "A base", "Google Local 2021: 430 mil avaliações de restaurantes, cafés e bares, com nota por usuário")
     (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Em números", "78% das notas são 4 ou 5"], proporcao=0.42)
     numeros = [("429.622", "avaliações"), ("175.278", "usuários"), ("1.863", "locais"), ("115", "cidades"), ("2008–2021", "período"), ("99,87%", "esparsidade")]
@@ -314,6 +359,7 @@ def categorias(p):
 
 
 def tecnica(p):
+    item("d")
     s = novo_slide(p, "Por que conteúdo e escores de produto", "É a única das quatro técnicas que atende sozinha os três cenários usando as notas")
     (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["As quatro técnicas do enunciado", "O que as análises mostraram"], proporcao=0.58)
     linhas = [
@@ -348,70 +394,264 @@ def tecnica(p):
     notas(s, "A técnica é a única que atende sozinha os três cenários usando as notas. As análises apoiam os componentes: vizinhos por usuário têm pouquíssima sobreposição; o local explica parte da nota, o que justifica o escore de qualidade; e as pessoas ficam na própria cidade, o que justifica o componente de localização.")
 
 
-def conteudo(p):
-    s = novo_slide(p, "Conteúdo", "Cada local vira um vetor; cada usuário, um perfil")
-    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Do local ao perfil", "Os 5 vizinhos por cosseno de três locais"], proporcao=0.45)
-    texto(s, x1, y1, w1, h1, [
-        [("Vetor do local: ", {"negrito": True}), ("TF-IDF das categorias e dos atributos declaráveis (entrega, acessibilidade, pagamento…), normalizado em L2.", {})],
-        [("Similaridade: ", {"negrito": True}), ("cosseno, levado para 0 a 1: sim = (cos + 1) / 2.", {})],
-        [("Perfil do usuário: ", {"negrito": True}), ("soma dos vetores dos locais avaliados, com peso pela nota.", {})],
-        [("p", {"negrito": True, "cor": TERRACOTA}), ("u", {"negrito": True, "cor": TERRACOTA, "tamanho": 11}), (" ∝ Σ (nota − c", {"negrito": True, "cor": TERRACOTA}), ("u", {"negrito": True, "cor": TERRACOTA, "tamanho": 11}), (") · x", {"negrito": True, "cor": TERRACOTA}), ("i", {"negrito": True, "cor": TERRACOTA, "tamanho": 11})],
-        [("c", {"negrito": True}), ("u", {"negrito": True, "tamanho": 11}), (" é a média do usuário no cenário 1 (do que ele gosta mais) e 3 no cenário 3 (o tipo de lugar que frequenta).", {})],
-    ], tamanho=16, espaco=12, marcadores=True)
-    imagem(s, FIGURAS / "20_vizinhos_conteudo.png", x2, y2, w2, h2)
-    notas(s, "O conteúdo usa só o que um local recém-cadastrado poderia informar: categorias e atributos declaráveis. O TF-IDF dá menos peso aos atributos que quase todos têm. "
-             "O perfil soma os vetores dos locais avaliados, positivos quando a nota passa do centro e negativos abaixo. À direita, os vizinhos de uma pizzaria, um café e um bar são do mesmo tipo: o cosseno mede o tipo de lugar, não a qualidade. Por isso entram os escores.")
-
-
-def escores(p):
-    s = novo_slide(p, "Escores e pontuação", "Qualidade, popularidade e localização completam o conteúdo")
-    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Escore bayesiano", "Os componentes e os pesos de cada cenário"], proporcao=0.45)
-    figura_com_legenda(s, FIGURAS / "30_escore_bayesiano.png", (x1, y1, w1, h1), "escore = (v·R + m·C) / (v + m), com m no percentil 25 das avaliações por local", tamanho=13)
-    texto(s, x2, y2, w2, 1.6, [
-        [("Popularidade: ", {"negrito": True}), ("log(1 + v) / log(1 + máx v)", {})],
-        [("Localização: ", {"negrito": True}), ("média de exp(−km / 200) até os locais que a pessoa avaliou", {})],
-        [("Nota prevista: ", {"negrito": True}), ("escore do local + viés do usuário", {})],
-    ], tamanho=15, espaco=8, marcadores=True)
-    linhas = [("Cenário", "Conteúdo", "Escore", "Localização", "Popularidade"),
-              ("1. Usuário antigo", "0,1", "0,2", "0,5", "0,2"),
-              ("2. Usuário novo", "0,05", "0,19", "0,475", "0,285"),
-              ("3. Local novo", "0,5", "—", "0,5", "—")]
-    tabela = s.shapes.add_table(4, 5, Inches(x2), Inches(y2 + 1.75), Inches(w2), Inches(1.9)).table
-    tabela.columns[0].width = Inches(w2 * 0.24)
-    for j in range(1, 5):
-        tabela.columns[j].width = Inches(w2 * 0.19)
+def tabela_simples(slide, linhas, x, y, w, h, larguras, tamanho=13, alinhar_centro=True):
+    """Tabela no estilo do modelo: cabeçalho em terracota e linhas alternadas."""
+    tabela = slide.shapes.add_table(len(linhas), len(linhas[0]), Inches(x), Inches(y), Inches(w), Inches(h)).table
+    for j, fracao in enumerate(larguras):
+        tabela.columns[j].width = Inches(w * fracao)
     for i, linha in enumerate(linhas):
         for j, valor in enumerate(linha):
             celula = tabela.cell(i, j)
             celula.fill.solid()
             celula.fill.fore_color.rgb = TERRACOTA if i == 0 else (TINTA_CARTAO if i % 2 == 0 else BRANCO)
             celula.text_frame.text = valor
-            celula.margin_left = celula.margin_right = Inches(0.05)
+            celula.margin_left = celula.margin_right = Inches(0.06)
             paragrafo = celula.text_frame.paragraphs[0]
-            paragrafo.alignment = PP_ALIGN.LEFT if j == 0 else PP_ALIGN.CENTER
+            paragrafo.alignment = PP_ALIGN.CENTER if (alinhar_centro and j > 0) else PP_ALIGN.LEFT
+            if not paragrafo.runs:
+                continue
             fonte = paragrafo.runs[0].font
-            fonte.name, fonte.size, fonte.bold = FONTE_TEXTO, Pt(12), i == 0
+            fonte.name, fonte.size, fonte.bold = FONTE_TEXTO, Pt(tamanho), i == 0 or j == 0
             fonte.color.rgb = BRANCO if i == 0 else TEXTO
             celula.vertical_anchor = MSO_ANCHOR.MIDDLE
-    texto(s, x2, y2 + 3.85, w2, 1.0, [
-        "Usuário novo: o que ele declara faz o papel do histórico.",
-        "Cenário 3: a lista do usuário antigo reserva 1 posição a um local novo (cota).",
-    ], tamanho=13, cor=SUAVE, espaco=4)
-    notas(s, "O escore bayesiano evita que um local com duas notas 5 passe à frente de um com centenas de avaliações. A popularidade usa o logaritmo para não ser dominada pelos maiores, e a localização decai com a distância, com τ de 200 km. "
-             "Os pesos de cada cenário foram escolhidos na validação, como mostramos adiante. No cenário 3, o local novo não tem escore nem popularidade, então só conteúdo e localização pontuam.")
+    return tabela
+
+
+def num(valor, casas=2):
+    return f"{valor:+.{casas}f}".replace(".", ",") if casas and valor != 0 else f"{valor:.{casas}f}".replace(".", ",")
+
+
+def br(valor, casas=2):
+    return f"{valor:.{casas}f}".replace(".", ",")
+
+
+# Exemplo de brinquedo dos passos 1 a 3: a usuária Ana e três locais. Contas feitas aqui, sem TF-IDF,
+# para o slide mostrar números que fecham.
+CARACTERISTICAS = ["Pizzaria", "Café", "Bar", "Entrega", "Mesas ao ar livre"]
+AVALIADOS = [("Pizzaria A", [1, 0, 0, 1, 0], 5), ("Café B", [0, 1, 0, 1, 0], 2), ("Bar C", [0, 0, 1, 0, 1], 4)]
+CANDIDATOS = [("Pizzaria D", [1, 0, 0, 1, 0]), ("Café E", [0, 1, 0, 0, 1])]
+
+
+def _exemplo():
+    media = np.mean([nota for _, _, nota in AVALIADOS])
+    pesos = [nota - media for _, _, nota in AVALIADOS]
+    perfil = sum(peso * np.array(vetor, float) for peso, (_, vetor, _) in zip(pesos, AVALIADOS))
+    similaridades = []
+    for nome, vetor in CANDIDATOS:
+        v = np.array(vetor, float)
+        cosseno = perfil @ v / (np.linalg.norm(perfil) * np.linalg.norm(v))
+        similaridades.append((nome, cosseno, (cosseno + 1) / 2))
+    return media, pesos, perfil, similaridades
+
+
+def ideia(p):
+    s = novo_slide(p, "O método em uma ideia", "Para cada local, o sistema faz quatro perguntas e soma as respostas")
+    perguntas = [
+        ("1", TERRACOTA, "É parecido com o que você gostou?", "Conteúdo", "compara as características do local com o seu perfil"),
+        ("2", SALVIA, "É bom?", "Escore", "a nota média do local, com cuidado para quem tem poucas avaliações"),
+        ("3", MOSTARDA, "É perto de onde você anda?", "Localização", "a distância até os locais que você já avaliou"),
+        ("4", TEXTO, "Muita gente vai?", "Popularidade", "quantas avaliações o local tem"),
+    ]
+    largura = (LARGURA - 2 * MARGEM - 0.9) / 4
+    for k, (numero, cor, pergunta, nome, explicacao) in enumerate(perguntas):
+        x = MARGEM + k * (largura + 0.3)
+        cartao(s, x, TOPO_CARTAO, largura, 3.7)
+        circulo_numerado(s, x + 0.3, TOPO_CARTAO + 0.3, numero, cor, d=0.6)
+        texto(s, x + 0.3, TOPO_CARTAO + 1.1, largura - 0.6, 1.0, pergunta, tamanho=18, negrito=True, fonte=FONTE_TITULO, espaco=0)
+        texto(s, x + 0.3, TOPO_CARTAO + 2.15, largura - 0.6, 0.4, nome, tamanho=15, negrito=True, cor=cor if cor != TEXTO else SUAVE, espaco=0)
+        texto(s, x + 0.3, TOPO_CARTAO + 2.55, largura - 0.6, 1.0, explicacao, tamanho=13, espaco=0)
+    y = TOPO_CARTAO + 4.0
+    cartao(s, MARGEM, y, LARGURA - 2 * MARGEM, BASE_CARTAO - y)
+    texto(s, MARGEM + 0.4, y + 0.25, LARGURA - 2 * MARGEM - 0.8, BASE_CARTAO - y - 0.4, [
+        [("Cada resposta vira uma nota de 0 a 1, e a pontuação é a soma com pesos:", {})],
+        [("pontuação = α·conteúdo + β·escore + γ·localização + δ·popularidade", {"negrito": True, "cor": TERRACOTA, "tamanho": 20})],
+        [("A lista são os 10 locais com maior pontuação, entre os abertos que a pessoa ainda não avaliou.", {})],
+    ], tamanho=15, espaco=8, alinhar=PP_ALIGN.CENTER, ancora=MSO_ANCHOR.MIDDLE)
+    notas(s, "A ideia do método cabe em quatro perguntas. A primeira é o 'conteúdo': o local se parece com os que a pessoa gostou? As outras três são os 'escores de produto', que descrevem o local em si: se é bom, se é perto e se é popular. "
+             "Cada resposta vira um número de 0 a 1, e a pontuação final é uma soma ponderada. Nos próximos slides, cada pergunta com um exemplo.")
+
+
+def passo_vetor(p):
+    s = novo_slide(p, "Passo 1: o local vira uma lista de características", "Categorias e atributos que o próprio local informa, com mais peso para os raros")
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Exemplo com três locais", "Raras pesam mais (TF-IDF)"], proporcao=0.58)
+    linhas = [["Local"] + CARACTERISTICAS] + [[nome] + ["✓" if marca else "" for marca in vetor] for nome, vetor, _ in AVALIADOS]
+    tabela_simples(s, linhas, x1, y1 + 0.1, w1, 2.0, [0.22] + [0.156] * 5, tamanho=13)
+    texto(s, x1, y1 + 2.45, w1, 2.3, [
+        "Cada coluna é uma característica, e cada local é uma linha: um vetor.",
+        "Na base real são 167 características: 136 categorias (pizzaria, café, churrascaria…) e 31 atributos (entrega, acessibilidade, formas de pagamento…).",
+        "Só entra o que um local recém-aberto poderia informar.",
+    ], tamanho=15, espaco=10, marcadores=True)
+    destaque(s, x2, y2 + 0.1, w2, "1,08", "peso de \"Entrega\": quase todo local tem, então diz pouco sobre ele", cor=SUAVE, tamanho=32)
+    destaque(s, x2, y2 + 1.6, w2, "7,31", "peso de \"Loja de pretzel\": rara, então diz muito", cor=TERRACOTA, tamanho=32)
+    texto(s, x2, y2 + 3.2, w2, 1.6, "O TF-IDF multiplica cada característica pelo quanto ela é rara na base. Depois, cada vetor é normalizado para ter tamanho 1.", tamanho=14, espaco=0)
+    notas(s, "O primeiro passo é descrever cada local por suas características, como numa planilha de marcações: cada coluna é uma característica, e cada local é uma linha. "
+             "Nem toda característica informa o mesmo: quase todo restaurante faz entrega, então isso diz pouco; ser uma loja de pretzel diz muito. O TF-IDF dá esse peso: 1,08 para entrega e 7,31 para loja de pretzel, na nossa base.")
+
+
+def passo_perfil(p):
+    media, pesos, perfil, _ = _exemplo()
+    s = novo_slide(p, "Passo 2: o usuário vira um perfil", "O perfil soma os locais que a pessoa avaliou, com peso pela nota em relação à média dela")
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, [f"Exemplo: Ana avaliou três locais (média {br(media)})", "Perfil real do Usuário #12.369"], proporcao=0.55)
+    linhas = [["Local", "Nota", "Nota − média"]] + [[nome, str(nota), num(peso)] for (nome, _, nota), peso in zip(AVALIADOS, pesos)]
+    tabela_simples(s, linhas, x1, y1 + 0.05, w1, 1.6, [0.4, 0.25, 0.35], tamanho=14)
+    texto(s, x1, y1 + 1.85, w1, 0.4, "Perfil da Ana: soma das características, com esses pesos", tamanho=14, negrito=True, espaco=0)
+    maior = max(abs(v) for v in perfil)
+    base = y1 + 2.35
+    meio = x1 + 2.6 + (w1 - 2.6) / 2
+    for k, (nome, valor) in enumerate(zip(CARACTERISTICAS, perfil)):
+        y = base + k * 0.48
+        texto(s, x1, y, 2.5, 0.38, nome, tamanho=13, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+        comprimento = abs(valor) / maior * ((w1 - 2.6) / 2 - 0.55)
+        if comprimento > 0.01:
+            barra = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(meio if valor > 0 else meio - comprimento), Inches(y + 0.06), Inches(comprimento), Inches(0.26))
+            barra.fill.solid()
+            barra.fill.fore_color.rgb = TERRACOTA if valor > 0 else SALVIA
+            _sem_borda(barra)
+        posicao = meio + comprimento + 0.08 if valor > 0 else meio - comprimento - 0.62
+        texto(s, posicao, y, 0.6, 0.38, num(valor), tamanho=12, ancora=MSO_ANCHOR.MIDDLE, alinhar=PP_ALIGN.LEFT if valor > 0 else PP_ALIGN.RIGHT, espaco=0)
+    linha = s.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(meio), Inches(base - 0.05), Inches(meio), Inches(base + 5 * 0.48))
+    linha.line.color.rgb = SUAVE
+    linha.line.width = Pt(1)
+    figura_com_legenda(s, RECORTES / "demo_gosto.png", (x2, y2, w2, h2), "Lado direito: gosta mais que a própria média. Lado esquerdo: gosta menos.", tamanho=13)
+    notas(s, "O segundo passo é o perfil. A Ana deu 5 para uma pizzaria, 2 para um café e 4 para um bar; a média dela é 3,67. Cada local entra no perfil com o peso da nota menos a média: a pizzaria soma 1,33, o café subtrai 1,67. "
+             "O resultado diz que a Ana gosta de pizzaria e não gosta de café; 'Entrega' fica levemente negativa porque aparece nos dois. À direita, o perfil real de um usuário da base, calculado do mesmo jeito.")
+
+
+def passo_cosseno(p):
+    _, _, _, similaridades = _exemplo()
+    s = novo_slide(p, "Passo 3: \"parecido\" é o cosseno", "Compara o perfil com cada local candidato: perto de 1 é parecido, perto de 0 é o oposto")
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Os candidatos da Ana", "Na base real: vizinhos de três locais"], proporcao=0.45)
+    for k, ((nome, vetor), (_, cosseno, similaridade)) in enumerate(zip(CANDIDATOS, similaridades)):
+        y = y1 + 0.1 + k * 1.85
+        cartao(s, x1, y, w1, 1.6, cor=TINTA_CARTAO)
+        tem = ", ".join(c for c, marca in zip(CARACTERISTICAS, vetor) if marca)
+        texto(s, x1 + 0.25, y + 0.15, w1 - 2.2, 0.4, nome, tamanho=17, negrito=True, fonte=FONTE_TITULO, espaco=0)
+        texto(s, x1 + 0.25, y + 0.6, w1 - 2.2, 0.9, f"tem: {tem}", tamanho=13, espaco=0)
+        destaque(s, x1 + w1 - 1.85, y + 0.2, 1.7, br(similaridade), "conteúdo", cor=TERRACOTA if similaridade > 0.5 else SALVIA, tamanho=30)
+    texto(s, x1, y1 + 3.9, w1, 1.0, [[("conteúdo = (cosseno + 1) / 2", {"negrito": True, "cor": TERRACOTA})], [("O cosseno mede o ângulo entre os dois vetores; a conta leva o resultado para 0 a 1.", {})]], tamanho=14, espaco=6)
+    imagem(s, FIGURAS / "20_vizinhos_conteudo.png", x2, y2, w2, h2)
+    notas(s, "O terceiro passo compara o perfil com cada candidato pelo cosseno: dois vetores que apontam para o mesmo lado dão 1; para lados opostos, menos 1; a conta leva para 0 a 1. "
+             f"A Pizzaria D, parecida com o que a Ana gostou, recebe {br(similaridades[0][2])}; o Café E recebe {br(similaridades[1][2])}. "
+             "À direita, na base real, os vizinhos de uma pizzaria, de um café e de um bar são do mesmo tipo. Atenção: o cosseno mede o tipo de lugar, não a qualidade; é por isso que entram os escores.")
+
+
+def passo_escores(p):
+    s = novo_slide(p, "Passo 4: os escores do local", "Qualidade, distância e popularidade, cada um de 0 a 1")
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Escore: média bayesiana", "Localização e popularidade"], proporcao=0.52)
+    texto(s, x1, y1, w1, 0.9, "Puxa a média de quem tem poucas avaliações para a média geral (4,13), com peso m = 36,8 avaliações:", tamanho=14, espaco=0)
+    texto(s, x1, y1 + 0.75, w1, 0.5, "escore = (v · média do local + m · 4,13) / (v + m)", tamanho=15, negrito=True, cor=TERRACOTA, espaco=0)
+    exemplos = [("2 avaliações, média 5,0", "4,18", "pouca evidência: fica perto de 4,13"), ("400 avaliações, média 4,7", "4,65", "muita evidência: fica perto de 4,7")]
+    for k, (caso, valor, leitura) in enumerate(exemplos):
+        y = y1 + 1.5 + k * 1.55
+        cartao(s, x1, y, w1, 1.35, cor=TINTA_CARTAO)
+        texto(s, x1 + 0.25, y + 0.15, w1 - 2.0, 0.45, caso, tamanho=15, negrito=True, espaco=0)
+        texto(s, x1 + 0.25, y + 0.65, w1 - 2.0, 0.6, leitura, tamanho=13, cor=SUAVE, espaco=0)
+        destaque(s, x1 + w1 - 1.6, y + 0.15, 1.5, valor, "escore", cor=SALVIA if k == 0 else TERRACOTA, tamanho=30)
+    texto(s, x2, y2, w2, 0.5, [[("Localização = média de exp(−km / 200)", {"negrito": True, "cor": TERRACOTA})]], tamanho=15, espaco=0)
+    texto(s, x2, y2 + 0.45, w2, 0.5, "até os locais que a pessoa já avaliou:", tamanho=14, espaco=0)
+    distancias = [("0 km", "1,00"), ("50 km", "0,78"), ("200 km", "0,37"), ("500 km", "0,08")]
+    tabela_simples(s, [["Distância", "Localização"]] + [list(d) for d in distancias], x2, y2 + 0.95, w2, 2.0, [0.5, 0.5], tamanho=14)
+    texto(s, x2, y2 + 3.25, w2, 1.6, [
+        [("Popularidade = log(1 + avaliações) / log(1 + máximo)", {"negrito": True, "cor": TERRACOTA})],
+        [("O logaritmo evita que os gigantes dominem: 100 avaliações já dão 0,59; 2.598, o máximo, dá 1.", {})],
+    ], tamanho=14, espaco=6)
+    notas(s, "Os escores de produto descrevem o local. O escore de qualidade é uma média bayesiana: com poucas avaliações, ele fica perto da média geral de 4,13; com muitas, fica perto da média do próprio local. "
+             "A localização vale 1 para um local ao lado dos que a pessoa frequenta e cai com a distância. A popularidade usa logaritmo, para não ser dominada pelos maiores.")
+
+
+def passo_soma(p):
+    s = novo_slide(p, "Passo 5: a soma decide a ordem", "Exemplo real, Usuário #12.369 de Riverton: o melhor escore da base fica em 375º por estar longe")
+    pesos = [("Conteúdo", 0.1, TERRACOTA), ("Escore", 0.2, SALVIA), ("Localização", 0.5, MOSTARDA), ("Popularidade", 0.2, SUAVE)]
+    casos = [
+        ("The Depot Restaurant (Riverton)", "1º de 1.508", [0.551, 0.840, 0.691, 0.777]),
+        ("Bar J Chuckwagon Suppers (Wilson)", "375º de 1.508", [0.476, 0.941, 0.260, 0.880]),
+    ]
+    x, w = MARGEM, LARGURA - 2 * MARGEM
+    cartao(s, x, TOPO_CARTAO, w, BASE_CARTAO - TOPO_CARTAO)
+    linhas = [["Componente", "Peso"] + [nome.split(" (")[0] for nome, _, _ in casos]]
+    for k, (nome, peso, _) in enumerate(pesos):
+        linhas.append([nome, br(peso, 1)] + [f"{br(valores[k])} × {br(peso, 1)} = {br(peso * valores[k], 3)}" for _, _, valores in casos])
+    linhas.append(["Pontuação", "", *[br(sum(peso * v for (_, peso, _), v in zip(pesos, valores)), 3) for _, _, valores in casos]])
+    tabela_simples(s, linhas, x + 0.3, TOPO_CARTAO + 0.3, w - 0.6, 2.6, [0.2, 0.1, 0.35, 0.35], tamanho=14)
+    escala = (w - 6.2) / 0.75
+    for k, (nome, posicao, valores) in enumerate(casos):
+        y = TOPO_CARTAO + 3.3 + k * 1.0
+        texto(s, x + 0.3, y, 3.4, 0.5, nome.split(" (")[0], tamanho=14, negrito=True, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+        inicio = x + 3.8
+        for (componente, peso, cor), valor in zip(pesos, valores):
+            largura = peso * valor * escala
+            barra = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(inicio), Inches(y + 0.05), Inches(largura), Inches(0.4))
+            barra.fill.solid()
+            barra.fill.fore_color.rgb = cor
+            barra.line.color.rgb = BRANCO
+            barra.line.width = Pt(1.5)
+            barra.shadow.inherit = False
+            inicio += largura
+        texto(s, inicio + 0.15, y, 1.9, 0.5, posicao, tamanho=14, negrito=True, cor=TERRACOTA, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+    legenda_y = TOPO_CARTAO + 5.25
+    inicio = x + 3.8
+    for componente, _, cor in pesos:
+        quadrado = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(inicio), Inches(legenda_y + 0.08), Inches(0.2), Inches(0.2))
+        quadrado.fill.solid()
+        quadrado.fill.fore_color.rgb = cor
+        _sem_borda(quadrado)
+        texto(s, inicio + 0.28, legenda_y, 1.6, 0.36, componente, tamanho=12, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+        inicio += 1.9
+    notas(s, "O quinto passo soma tudo com os pesos. Exemplo real: para o Usuário #12.369, de Riverton, o The Depot Restaurant tem escore bom, é perto e é popular: soma 0,724 e fica em 1º. "
+             "O Bar J Chuckwagon Suppers tem o melhor escore da base, mas fica em Wilson, longe dos lugares que essa pessoa avalia: a localização cai para 0,26, e ele fica em 375º. É a localização, com peso 0,5, que mais move a ordem.")
+
+
+def passo_cenarios(p):
+    s = novo_slide(p, "Os três cenários usam a mesma conta", "O que muda é de onde vem o perfil e quais perguntas têm resposta")
+    largura = (LARGURA - 2 * MARGEM - 0.6) / 3
+    blocos = [
+        ("1", TERRACOTA, "Usuário antigo", ["Perfil: o histórico de notas", "As quatro perguntas", "Na lista, 1 vaga reservada a um local novo"]),
+        ("2", SALVIA, "Usuário novo", ["Perfil: o que a pessoa informa (categorias, atributos, um local de que gosta)", "Localização: distância ao centro da cidade informada", "Tudo é opcional; a lista nunca fica vazia"]),
+        ("3", MOSTARDA, "Local novo", ["Sem avaliações: não há escore nem popularidade", "Só conteúdo e localização, meio a meio", "Ordena os usuários antigos para indicar o local"]),
+    ]
+    for k, (numero, cor, nome, itens) in enumerate(blocos):
+        x = MARGEM + k * (largura + 0.3)
+        cartao(s, x, TOPO_CARTAO, largura, BASE_CARTAO - TOPO_CARTAO - 1.15)
+        circulo_numerado(s, x + 0.3, TOPO_CARTAO + 0.3, numero, cor, d=0.55)
+        texto(s, x + 1.0, TOPO_CARTAO + 0.35, largura - 1.2, 0.45, nome, tamanho=18, negrito=True, fonte=FONTE_TITULO, espaco=0)
+        texto(s, x + 0.3, TOPO_CARTAO + 1.15, largura - 0.6, 3.3, itens, tamanho=15, espaco=12, marcadores=True)
+    y = BASE_CARTAO - 0.9
+    cartao(s, MARGEM, y, LARGURA - 2 * MARGEM, 0.9, cor=TINTA_CARTAO)
+    texto(s, MARGEM + 0.3, y, LARGURA - 2 * MARGEM - 0.6, 0.9, [[("Nota prevista: ", {"negrito": True}), ("escore do local + o quanto a pessoa costuma dar acima ou abaixo da média (viés). Aparece na interface como informação.", {})]], tamanho=14, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+    notas(s, "Os três cenários usam a mesma pontuação. Para o usuário novo, o perfil vem do que ele informa, e a localização é a distância ao centro da cidade escolhida. "
+             "Para o local novo, que não tem avaliações, só há resposta para duas perguntas: é parecido e é perto. Por isso o conteúdo é o que permite recomendar um local recém-aberto.")
 
 
 def tratamento(p):
+    item("e")
     s = novo_slide(p, "Tratamento dos dados", "Do arquivo bruto à base limpa, e o que entra no vetor de conteúdo")
-    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Funil", "O vetor de conteúdo"], proporcao=0.55)
-    etapas = [("12.088", "linhas de locais", 1.0, TEXTO), ("12.016", "sem 72 cópias", 0.99, TEXTO), ("11.931", "com categoria", 0.98, TEXTO), ("1.863", "no recorte de alimentação (8 incluídos à mão)", 0.42, TERRACOTA),
-              ("433.918", "avaliações desses locais", 1.0, TEXTO), ("429.622", "sem 4.296 duplicatas exatas", 0.97, TERRACOTA)]
-    for i, (valor, rotulo, fracao, cor) in enumerate(etapas):
-        y = y1 + i * 0.56 + (0.2 if i >= 4 else 0)
-        barra = cartao(s, x1, y, max(0.5, (w1 - 0.1) * 0.42 * fracao), 0.44, cor=TINTA_CARTAO if cor == TEXTO else RGBColor(0xF3, 0xDF, 0xD3))
-        texto(s, x1 + 0.15, y, 1.4, 0.44, valor, tamanho=16, negrito=True, cor=cor, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
-        texto(s, x1 + (w1 - 0.1) * 0.42 + 0.2, y, w1 * 0.58 - 0.2, 0.44, rotulo, tamanho=14, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
-    texto(s, x1, y1 + h1 - 0.55, w1, 0.6, "Mantidos, com justificativa: avaliações sem texto (41%) e rajadas (1,4%). Os 238 locais fechados ficam na base, mas não são recomendados.", tamanho=13, cor=SUAVE, espaco=0)
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["Duplicados e ausentes", "O vetor de conteúdo"], proporcao=0.58)
+    linhas = [
+        ("Problema", "Quanto", "Tratamento"),
+        ("Local repetido (mesmo gmap_id)", "72 cópias", "Removido"),
+        ("Avaliação duplicada", "4.296", "Removida"),
+        ("Local sem categoria", "85", "Removido"),
+        ("Nota ou usuário ausente", "0", "Removeria"),
+        ("Avaliação sem texto", "41,3%", "Mantida: texto não entra"),
+        ("Local sem preço", "37,1%", "Fora do vetor; filtro"),
+        ("Local sem cidade", "7", "Usa a coordenada"),
+        ("Local fechado", "238", "Não é recomendado"),
+    ]
+    tabela = s.shapes.add_table(len(linhas), 3, Inches(x1), Inches(y1), Inches(w1), Inches(3.9)).table
+    for j, fracao in enumerate([0.46, 0.18, 0.36]):
+        tabela.columns[j].width = Inches(w1 * fracao)
+    for i, linha in enumerate(linhas):
+        for j, valor in enumerate(linha):
+            celula = tabela.cell(i, j)
+            celula.fill.solid()
+            celula.fill.fore_color.rgb = TERRACOTA if i == 0 else (TINTA_CARTAO if i % 2 == 0 else BRANCO)
+            celula.text_frame.text = valor
+            celula.margin_left = celula.margin_right = Inches(0.08)
+            fonte = celula.text_frame.paragraphs[0].runs[0].font
+            fonte.name, fonte.size, fonte.bold = FONTE_TEXTO, Pt(13), i == 0
+            fonte.color.rgb = BRANCO if i == 0 else TEXTO
+            celula.vertical_anchor = MSO_ANCHOR.MIDDLE
+    texto(s, x1, y1 + 4.05, w1, 0.8, [[("Recorte: ", {"negrito": True}), ("12.016 locais → 1.863 de alimentação, pela categoria principal; 429.622 avaliações na base limpa.", {})]], tamanho=13, espaco=0)
     texto(s, x2, y2, w2, h2, [
         [("Entra: ", {"negrito": True, "cor": SALVIA}), ("categorias e atributos declaráveis (serviço, acessibilidade, comodidades, pagamento, planejamento)", {})],
         [("Fica fora: ", {"negrito": True, "cor": TERRACOTA}), ("atributos que vêm do comportamento dos clientes (\"popular para\", público, ambiente) e os da pandemia", {})],
@@ -419,11 +659,12 @@ def tratamento(p):
         [("Fica fora: ", {"negrito": True, "cor": TERRACOTA}), ("texto das avaliações, que um local novo não tem", {})],
         [("Resultado: ", {"negrito": True}), ("167 tokens (136 de categorias e 31 de atributos)", {})],
     ], tamanho=15, espaco=12, marcadores=True)
-    notas(s, "O recorte usa a categoria principal: um hotel com restaurante fica de fora. Removemos cópias, locais sem categoria e duplicatas exatas de avaliações. "
+    notas(s, "Duplicados: 72 cópias idênticas de locais e 4.296 avaliações repetidas, removidas; não havia avaliação repetida do mesmo usuário no mesmo local. Ausentes: nenhuma nota ou usuário faltando; 85 locais sem categoria saíram; texto, preço e cidade ausentes ficaram, com o tratamento da tabela. O recorte usa a categoria principal: um hotel com restaurante fica de fora. "
              "No vetor, a regra é só usar o que um local recém-cadastrado poderia informar; atributos derivados do comportamento dos clientes e o preço carregam viés de popularidade.")
 
 
 def divisao(p):
+    item("f")
     s = novo_slide(p, "Treino e teste", "Divisão no tempo: o modelo aprende com o passado e é medido no futuro")
     cartao(s, MARGEM, TOPO_CARTAO, LARGURA - 2 * MARGEM, 3.15)
     imagem(s, FIGURAS / "21_divisao_temporal.png", MARGEM + 0.3, TOPO_CARTAO + 0.15, 7.2, 2.85)
@@ -451,7 +692,8 @@ def divisao(p):
 
 
 def metricas(p):
-    s = novo_slide(p, "Métricas", "Duas perguntas, duas métricas: a pessoa foi? E gostou?")
+    item("h")
+    s = novo_slide(p, "Métricas estudadas em aula", "Duas perguntas, duas métricas: a pessoa foi? E gostou?")
     (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["A pessoa foi?", "Ela gostou?"])
     destaque(s, x1, y1 + 0.1, w1, "Taxa de conversão@10", "fração da lista de 10 que a pessoa avaliou depois com nota 4 ou mais", cor=TERRACOTA, tamanho=26)
     destaque(s, x2, y2 + 0.1, w2, "AUC de gosto (curva ROC)", "entre os locais que a pessoa avaliou, a chance de um bom (4 ou 5) ficar acima de um ruim", cor=SALVIA, tamanho=26)
@@ -469,11 +711,37 @@ def metricas(p):
              "As duas competem: a popularidade converte muito e não acerta o gosto. Por isso o critério de escolha usa as duas.")
 
 
+def modelo_estimado(p):
+    item("g")
+    s = novo_slide(p, "Estimação", "O modelo final, ajustado com treino + validação (343.697 avaliações)")
+    (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["O que foi estimado", "Pesos escolhidos na validação"], proporcao=0.47)
+    estimados = [("4,132", "C: nota média, o prior do escore"), ("36,8", "m: peso do prior (percentil 25)"),
+                 ("140.895", "perfis de usuário"), ("167", "tokens no vocabulário TF-IDF"),
+                 ("200 km", "τ: alcance da localização"), ("10", "regularização do viés na nota prevista")]
+    for k, (valor, rotulo) in enumerate(estimados):
+        coluna, linha = k % 2, k // 2
+        destaque(s, x1 + coluna * w1 / 2, y1 + 0.05 + linha * 1.4, w1 / 2 - 0.15, valor, rotulo, cor=[TERRACOTA, SALVIA, MOSTARDA][linha], tamanho=28)
+    linhas = [("Cenário", "Conteúdo", "Escore", "Localização", "Popularidade"),
+              ("1. Usuário antigo", "0,1", "0,2", "0,5", "0,2"),
+              ("2. Usuário novo", "0,05", "0,19", "0,475", "0,285"),
+              ("3. Local novo", "0,5", "—", "0,5", "—")]
+    tabela_simples(s, [list(linha) for linha in linhas], x2, y2 + 0.05, w2, 2.0, [0.24, 0.16, 0.14, 0.22, 0.24], tamanho=12)
+    texto(s, x2, y2 + 2.3, w2, 2.6, [
+        [("Usuário antigo: ", {"negrito": True}), ("perfil centrado na média do usuário.", {})],
+        [("Usuário novo: ", {"negrito": True}), ("a categoria declarada entra com peso baixo, não como filtro.", {})],
+        [("Local novo: ", {"negrito": True}), ("perfil centrado na nota 3 e cota de 1 local novo na lista.", {})],
+        [("Tudo foi escolhido na validação e congelado antes do teste.", {"negrito": True, "cor": TERRACOTA})],
+    ], tamanho=14, espaco=8, marcadores=True)
+    notas(s, "Estimar o modelo, aqui, é calcular os escores, os perfis e o vocabulário a partir das avaliações, e escolher os hiperparâmetros na validação. "
+             "O modelo final foi reajustado com treino e validação: nota média de 4,132 como prior do escore, com peso m de 36,8; 140.895 perfis; 167 tokens. "
+             "Os pesos de cada cenário vêm do critério que mostramos a seguir. Tudo foi congelado antes de abrir o teste.")
+
+
 def pesos(p):
-    s = novo_slide(p, "Estimação", "Os pesos trocam 3,6% de conversão por mais gosto; o escore é quem acerta o gosto")
+    s = novo_slide(p, "Escolha dos pesos", "Os pesos trocam 3,6% de conversão por mais gosto; o escore é quem acerta o gosto")
     (x1, y1, w1, h1), (x2, y2, w2, h2) = dois_cartoes(s, ["286 combinações de pesos na validação", "Ablação: tirar ou usar só um componente"], proporcao=0.47)
     imagem(s, FIGURAS / "31_grade_pesos.png", x1, y1, w1, h1 - 0.9)
-    texto(s, x1, y1 + h1 - 0.8, w1, 0.8, [[("Critério: ", {"negrito": True}), ("conversão ≥ 95% da melhor; entre essas, a maior AUC de gosto. Escolhido: 0,1 / 0,2 / 0,5 / 0,2 (conversão 0,0739; gosto 0,5850).", {})]], tamanho=13, espaco=0)
+    texto(s, x1, y1 + h1 - 0.8, w1, 0.8, [[("Critério: ", {"negrito": True}), ("taxa de conversão@10 ≥ 95% da melhor; entre essas, a maior AUC de gosto. Escolhido: 0,1 / 0,2 / 0,5 / 0,2 (conversão 0,0739; gosto 0,5850).", {})]], tamanho=13, espaco=0)
     imagem(s, FIGURAS / "32_ablacao.png", x2, y2, w2, h2 - 1.1)
     texto(s, x2, y2 + h2 - 1.0, w2, 1.0, [
         [("Nenhum componente sozinho passa de 0,0415 de conversão; ", {}), ("sem o escore, o gosto cai para 0,485", {"negrito": True}), ("; sem o conteúdo, empata — ele amplia o catálogo.", {})],
@@ -513,6 +781,7 @@ def cenarios23(p):
 
 
 def demonstracao(p):
+    item("i")
     s = novo_slide(p, "Demonstração", "O gosto de um usuário e o que o sistema recomenda")
     cartao(s, MARGEM, TOPO_CARTAO, 8.6, BASE_CARTAO - TOPO_CARTAO)
     imagem(s, RECORTES / "demo_perfil.png", MARGEM + 0.25, TOPO_CARTAO + 0.2, 8.1, 2.95)
@@ -554,6 +823,7 @@ def telas(p):
 
 
 def conclusoes(p):
+    item("Conclusões")
     s = novo_slide(p, "Conclusões", "Uma técnica atende os três cenários, com sinal de gosto vindo da qualidade do local")
     largura = (LARGURA - 2 * MARGEM - 0.6) / 3
     blocos = [
@@ -579,6 +849,7 @@ def conclusoes(p):
 
 # ---------------------------------------------------------------- Apêndice
 def apendice(p):
+    item("Apêndice")
     divisoria(p, "Apêndice", "Detalhes para as perguntas")
 
     s = novo_slide(p, "A1. Sazonalidade e pandemia", "Julho tem 2 vezes o movimento de fevereiro; a pandemia corta a série em 2020")
@@ -628,7 +899,7 @@ def main():
     preparar_recortes()
     p = Presentation()
     p.slide_width, p.slide_height = Inches(LARGURA), Inches(ALTURA)
-    for montar in (capa, sistema, base, historico, categorias, tecnica, conteudo, escores, tratamento, divisao, metricas, pesos, cenario1, cenarios23, demonstracao, telas, conclusoes, apendice):
+    for montar in (capa, roteiro, sistema, base, historico, categorias, tecnica, ideia, passo_vetor, passo_perfil, passo_cosseno, passo_escores, passo_soma, passo_cenarios, tratamento, divisao, modelo_estimado, pesos, metricas, cenario1, cenarios23, demonstracao, telas, conclusoes, apendice):
         montar(p)
     SAIDA.mkdir(exist_ok=True)
     p.save(ARQUIVO)
