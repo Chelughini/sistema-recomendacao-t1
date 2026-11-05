@@ -788,6 +788,18 @@ Técnicas fora da escolhida, no cenário 1 e no mesmo protocolo, implementadas e
 
 A perda de conversão no cenário 1 fica registrada como limitação, e as referências entram de novo, no teste, na Fase 4.
 
+### 4.8 Previsão de nota
+
+Nas avaliações da validação de usuários antigos em locais com avaliações no treino (31.767 avaliações, 6.660 usuários), com intervalos de 95% por bootstrap de usuários:
+
+| Previsão | MAE | MSE | RMSE |
+|---|---|---|---|
+| Média global do treino | 0,8576 (0,8459 a 0,8692) | 1,2013 (1,1678 a 1,2341) | 1,0960 (1,0806 a 1,1109) |
+| Escore do local | 0,8225 (0,8119 a 0,8333) | 1,0873 (1,0574 a 1,1161) | 1,0427 (1,0283 a 1,0565) |
+| **Escore + viés do usuário** | **0,7553 (0,7440 a 0,7665)** | **0,9743 (0,9456 a 1,0014)** | **0,9871 (0,9724 a 1,0007)** |
+
+Cada passo reduz o erro, com intervalo longe de zero: o escore tira 0,0351 de MAE da média global (IC 95% de 0,0305 a 0,0393), e o viés tira mais 0,0672 do escore (IC 95% de 0,0614 a 0,0732). O erro continua perto de 1 ponto, o que confirma o pouco espaço para prever a nota de cada pessoa. Por isso o modelo ordena locais, e a nota prevista entra na interface só como informação. **Correlação de rankings dos finalistas** (as quatro combinações aptas com maior AUC de gosto no cenário 1, calculadas no notebook do modelo): a combinação escolhida tem os maiores valores, Spearman de 0,1200 e tau-b de Kendall de 0,1024, e as demais vão de 0,0663 a 0,1044 e de 0,0561 a 0,0896. A correlação confirma a AUC de gosto, mas os valores são baixos.
+
 ## 5. Avaliação final
 
 *A preencher na Fase 4.*
