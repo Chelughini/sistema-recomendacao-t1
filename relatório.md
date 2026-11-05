@@ -45,6 +45,8 @@ A pasta do projeto contém o enunciado, o planejamento e os dois arquivos de dad
 | pyarrow | 24.0.0 |
 | joblib | 1.6.0 |
 | streamlit | 1.58.0 |
+| altair | 6.2.1 |
+| playwright | 1.63.0 |
 | python-pptx | 1.0.2 |
 | nbformat | 5.11.1 |
 | nbconvert | 7.17.2 |
@@ -965,7 +967,32 @@ A queda atinge as duas ordenações e acompanha a coleta rarefeita no fim da bas
 
 ## 6. Interface
 
-*A preencher na Fase 5.*
+Código em `app.py` (Streamlit), funções sem Streamlit em `src/interface.py`, testes em `testes/test_interface.py` e telas em `figuras/50_` a `53_`, geradas por `scripts/capturar_telas.py` com casos fixos. Para rodar: `streamlit run app.py`, depois dos notebooks 01 a 03.
+
+**Modelos:** a interface carrega os modelos congelados da seção 4.9 (`recomendador.joblib`, ajustado em `treino_total`, e `recomendador_c3.joblib`, em `treino_total_c3`), com cache; a primeira carga leva de 5 a 30 segundos, e cada interação, menos de 1 segundo. Os usuários aparecem só como "Usuário #N", numerados pela ordem alfabética do identificador, de 1 a 140.895.
+
+**Barra lateral:** descrição do sistema e dos quatro componentes da pontuação, e o tamanho da lista, de 5 a 20, que vale para todas as abas.
+
+**Abas:**
+
+| Aba | O que mostra |
+|---|---|
+| Demonstração | Um usuário sorteado (10 ou mais avaliações) ou escolhido: indicadores, o gráfico do que pesa no gosto (os maiores pesos positivos e negativos do perfil), as notas que deu, o mapa com os locais avaliados e o top N, e as recomendações em prateleiras de cartões: "Top para você", "Porque você gostou de X" (até duas), "Novidades para você" e "Bem avaliados perto de você" |
+| Usuário antigo | Cenário 1: perfil em texto, cidades, histórico e o top N com a marca dos locais novos, a pontuação, a nota prevista, as barras dos quatro componentes e a explicação |
+| Usuário novo | Cenário 2: formulário com cidade, preço, categorias (como preferência ou filtro), atributos e local de exemplo, todos opcionais; mostra o que foi usado e os avisos da regra de não esvaziar |
+| Local novo | Cenário 3: um dos 200 locais novos do teste (100 reais e 100 simulados) ou um cadastro com nome, cidade, categorias, atributos e coordenada opcional; (A) os N usuários mais indicados, com conteúdo, localização e o porquê; (B) a posição do local na lista de um usuário e a decisão de recomendar |
+
+**Todas as prateleiras vêm da pontuação do modelo:** o "Top para você" é a lista do cenário 1, com a cota; "Porque você gostou de X" agrupa os 40 primeiros da lista pelo local que a explicação aponta, quando são 3 ou mais; "Novidades para você" ordena os locais sem avaliações pela mesma pontuação; "Bem avaliados perto de você" reordena pelo escore os 40 primeiros com localização acima da mediana. "Compatível" é a pontuação × 100, e não uma probabilidade; a nota prevista é a da seção 4.8.
+
+**Mensagens:** usuário inexistente; formulário vazio (a lista segue qualidade e popularidade); cidade com poucos locais e preço ou categorias sem locais suficientes (regra de não esvaziar); cidade sem locais na base e sem coordenada (o componente de localização fica zero); cadastro sem categorias nem atributos (conteúdo neutro); cadastro vazio (todos os usuários empatam).
+
+**Testes:** os três cenários e as mensagens foram exercitados no painel do navegador e por script, com o `AppTest` do Streamlit, sem erros. Casos: o Usuário #70.927 (9 avaliações, Greybull) recebe locais de Greybull e arredores, com dois locais novos; o usuário novo com Moran, pizzaria e preço $$$$ como filtro recebe a lista com os avisos de preço e de cidade pequena; o cadastro na cidade "Gotham", fora da base, recebe o aviso de localização zero. O teste de `prateleiras` pegou um defeito: o top saía da lista ampliada de 40, na qual a cota vale para as 40 posições, e por isso diferia da lista do cenário 1; ele passou a vir da chamada com N.
+
+**Limitações:**
+
+- A ordem segue sobretudo a localização e a popularidade, como mostram as barras: no usuário novo de Cheyenne com cafeteria e Wi-Fi, a primeira cafeteria fica em 10º, porque o conteúdo pesa 0,05 no cenário 2.
+- As prateleiras repetem locais entre si, como num catálogo; o "Top para você" é a única que segue exatamente a lista avaliada na seção 5.
+- A decisão de recomendar do cenário 3 considera só o mérito; a cota de 1 local novo pode levar o local à lista mesmo fora do top N.
 
 ## 7. Apresentação
 
@@ -981,3 +1008,4 @@ A queda atinge as duas ordenações e acompanha a coleta rarefeita no fim da bas
 - **2026-11-03:** na seção 2.1, saíram as contagens de `rating`, `user_id`, texto, fotos e respostas do arquivo inteiro, porque o notebook passou a carregar só as avaliações do recorte. Os valores do recorte estão na seção 2.2.
 - **2026-11-04:** a seção 4.3 registra a escolha conjunta de local e pesos, que substituiu a escolha do local com pesos fixos prevista no plano.
 - **2026-11-04:** na seção 4.4, os pesos do usuário novo e do local novo deixaram de ser provisórios (seções 4.5 e 4.6), e a lista do usuário antigo ganhou a cota de 1 local novo.
+- **2026-11-05:** a seção 6 registra a interface com quatro abas; a aba Demonstração foi pedida pela usuária durante a Fase 5.

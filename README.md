@@ -12,7 +12,19 @@ Para rodar, coloque `meta-Wyoming.json` e `review-Wyoming.json` na raiz do proje
 
 ## Como rodar
 
-Execute os notebooks na ordem, a partir da raiz: `01_dados.ipynb`, `02_preparacao.ipynb` e `03_modelo.ipynb`.
+Execute os notebooks na ordem, a partir da raiz: `01_dados.ipynb`, `02_preparacao.ipynb`, `03_modelo.ipynb` (grava os modelos em `modelos/`) e `04_avaliacao.ipynb`.
+
+Para abrir a interface, depois do notebook 03:
+
+```bash
+streamlit run app.py
+```
+
+Para refazer as telas de `figuras/50_` a `53_`, com o app aberto na porta 8501:
+
+```bash
+python scripts/capturar_telas.py
+```
 
 Para rodar os testes:
 
