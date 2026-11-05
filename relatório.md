@@ -755,6 +755,39 @@ A cota mantém 96% da conversão, acima do limite de 95% usado nos critérios. *
 
 **Congelado para o cenário 3,** em `modelos/cenario3.json` e por padrão na classe: perfil centrado em 3, pesos 0,5 / 0,5 (conteúdo / local) para ordenar locais novos e usuários para um local novo, e cota de 1 local novo na lista do usuário antigo. Na classe, `recomendar` passa a considerar os locais abertos sem avaliações no treino e marca na coluna `novo` os que entram.
 
+### 4.7 Referências
+
+Técnicas fora da escolhida, no cenário 1 e no mesmo protocolo, implementadas em `src/referencias.py`:
+
+- **Vizinhos por item:** cosseno na matriz binária (presença da avaliação); a pontuação de um candidato é a média das similaridades com os locais que o usuário avaliou.
+- **Vizinhos por item, combinado:** peso 0,2 para os vizinhos (divididos pelo máximo de cada usuário) e os pesos de escore, local e popularidade do modelo escolhido reescalados para somar 0,8 (0,178 / 0,444 / 0,178).
+- **PageRank personalizado:** passeio aleatório no grafo bipartido usuário–local, com reinício de 0,5 no usuário. A forma fechada usada no código foi conferida, nos testes, contra o passeio no grafo inteiro.
+
+| Ordenação | Conversão@10 | AUC de gosto | Cobertura do catálogo | Conversão − modelo (IC 95%) | Gosto − modelo (IC 95%) |
+|---|---|---|---|---|---|
+| **Modelo escolhido** | **0,0739** | **0,5850** | 45,9% | — | — |
+| Aleatório | 0,0028 | 0,4973 | 100% | −0,0711 (−0,0738 a −0,0685) | −0,0877 (−0,1050 a −0,0697) |
+| Popularidade | 0,0204 | 0,4858 | 1,3% | −0,0536 (−0,0560 a −0,0512) | −0,0991 (−0,1138 a −0,0844) |
+| Popularidade + local | 0,0715 | 0,4796 | 32,2% | −0,0024 (−0,0041 a −0,0007) | −0,1053 (−0,1166 a −0,0942) |
+| Vizinhos por item | 0,0806 | 0,4660 | 66,1% | 0,0066 (0,0041 a 0,0089) | −0,1189 (−0,1318 a −0,1064) |
+| Vizinhos por item, combinado | 0,0864 | 0,5188 | 55,6% | 0,0125 (0,0105 a 0,0144) | −0,0662 (−0,0763 a −0,0561) |
+| PageRank personalizado | 0,0831 | 0,4739 | 52,6% | 0,0092 (0,0072 a 0,0111) | −0,1110 (−0,1234 a −0,0990) |
+
+**Leitura:**
+
+- **As técnicas colaborativas convertem mais.** O combinado converte 17% mais que o modelo escolhido, acima dos cerca de 8% da tentativa anterior, que embasaram a escolha da técnica.
+- **O modelo escolhido é o único que acerta o gosto.** Vizinhos, PageRank e popularidade ficam abaixo do aleatório na AUC de gosto: acertam aonde a pessoa vai, não do que ela gosta.
+- **Pelo critério do projeto**, entre estas ordenações o vencedor seria o combinado, e o modelo escolhido não passaria do limite de conversão (0,0821).
+- **Cobertura do espaço de itens novos:** vizinhos e PageRank pontuam 0% dos locais novos; o conteúdo, 100%.
+
+**Por que a técnica foi mantida:**
+
+1. O enunciado pede **uma** técnica, e o combinado, o único que vence no critério, junta duas. Das técnicas únicas, o PageRank converte mais, mas tem AUC de gosto abaixo do acaso.
+2. Só o conteúdo atende os três cenários sozinho: as técnicas colaborativas precisam de histórico, então não atendem o usuário novo nem o local novo.
+3. O modelo escolhido é o que melhor separa o que a pessoa gosta do que ela não gosta, que é metade do objetivo do sistema.
+
+A perda de conversão no cenário 1 fica registrada como limitação, e as referências entram de novo, no teste, na Fase 4.
+
 ## 5. Avaliação final
 
 *A preencher na Fase 4.*
