@@ -800,6 +800,45 @@ Nas avaliações da validação de usuários antigos em locais com avaliações 
 
 Cada passo reduz o erro, com intervalo longe de zero: o escore tira 0,0351 de MAE da média global (IC 95% de 0,0305 a 0,0393), e o viés tira mais 0,0672 do escore (IC 95% de 0,0614 a 0,0732). O erro continua perto de 1 ponto, o que confirma o pouco espaço para prever a nota de cada pessoa. Por isso o modelo ordena locais, e a nota prevista entra na interface só como informação. **Correlação de rankings dos finalistas** (as quatro combinações aptas com maior AUC de gosto no cenário 1, calculadas no notebook do modelo): a combinação escolhida tem os maiores valores, Spearman de 0,1200 e tau-b de Kendall de 0,1024, e as demais vão de 0,0663 a 0,1044 e de 0,0561 a 0,0896. A correlação confirma a AUC de gosto, mas os valores são baixos.
 
+### 4.9 Teoria, exemplos e congelamento
+
+**Teoria (slide d).** O notebook do modelo abre com a teoria, com fórmulas:
+
+- **Recomendação baseada em conteúdo:** cada local vira um vetor com o que se sabe dele, e cada usuário, um perfil no mesmo espaço. Por depender só da descrição, a técnica pontua um local que ninguém avaliou.
+- **TF-IDF:** tokens raros pesam mais que comuns, com `idf(t) = ln((1 + N) / (1 + df(t))) + 1`, por bloco (categorias e atributos), cada um normalizado em L2.
+- **Cosseno:** `sim(u, i) = (cos(p_u, x_i) + 1) / 2`.
+- **Perfil ponderado pela nota:** `p_u ∝ Σ (r_ui − c_u)·x_i`, com `c_u` na média do usuário no cenário 1 (o que ele gosta mais) e em 3 no cenário 3 (o que ele frequenta).
+- **Escores de produto:** média bayesiana `(v·R + m·C) / (v + m)` e popularidade `log(1 + v) / log(1 + máx v)`.
+- **Local:** média de `exp(−km / τ)`, com τ = 200 km.
+- **Combinação linear** dos quatro componentes, com pesos escolhidos na validação.
+- **Por que ordenar em vez de prever nota:** as notas se concentram em 4 e 5, o local explica só 11% da variância e a previsão erra cerca de 1 ponto (seção 4.8); o que o usuário vê é a lista.
+
+![Escore bayesiano](figuras/30_escore_bayesiano.png)
+
+**Escore bayesiano:** com `m` = 26, os 194 locais com menos de 10 avaliações no treino têm média simples de 1 a 5, mas escore só de 3,54 a 4,34, perto de `C` = 4,12. Locais com centenas de avaliações ficam sobre a diagonal.
+
+**Exemplos:**
+
+- **Usuário A** (5 avaliações, Cheyenne): perfil com bar no local, restaurante, café da manhã e hamburgueria. A lista traz locais populares e bem avaliados da cidade, como Texas Roadhouse e Chick-fil-A, e termina com um local novo, o Rodolfo's Mexican Grill, pela cota.
+- **Usuário B** (23 avaliações, Evanston): perfil com restaurante, fast food, pagamento por aproximação e restaurante mexicano. A lista começa com o Jalisco Mexican Grill, "porque você gostou de Don Pedro's Family Mexican Restaurant", e tem quatro locais novos que entraram por mérito, sem a cota. Isso sugere que, em uma cidade pequena, a popularidade mediana atribuída aos locais novos compete com a dos conhecidos, ao contrário do que acontece em Cheyenne.
+
+**Congelamento:** todas as decisões estão em `modelos/configuracao.json`:
+
+| Tema | Decisão |
+|---|---|
+| Vetor | Categorias + atributos declaráveis, TF-IDF por bloco, `min_df = 2` |
+| Escore | `m` no percentil 25 |
+| Local | Distância, τ = 200 km |
+| Perfil | Centro na média do usuário (cenário 1); centro 3 (cenário 3) |
+| Cenário 1 | 0,1 / 0,2 / 0,5 / 0,2 |
+| Cenário 2 | 0,05 / 0,19 / 0,475 / 0,285; categorias com peso |
+| Cenário 3 | 0,5 / 0,5 (conteúdo / local); cota de 1 local novo |
+| Previsão de nota | Escore + viés, `reg = 10` |
+
+O modelo foi reajustado em `treino_total` (343.697 avaliações, 140.895 perfis, `C` = 4,132, `m` = 36,8) e em `treino_total_c3` (318.092 avaliações, sem os locais simulados do teste), e os dois foram gravados em `modelos/`. Recarregados, eles reproduzem as mesmas listas. Como guardam o treino, com identificadores de usuários, os arquivos `.joblib` ficam fora do repositório e são regenerados pelo notebook.
+
+**Ponto de decisão:** a usuária confirmou a configuração e a técnica antes do teste, ciente da comparação com as referências.
+
 ## 5. Avaliação final
 
 *A preencher na Fase 4.*

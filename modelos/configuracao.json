@@ -1,0 +1,33 @@
+{
+  "vetor": {
+    "peso_categorias": 1.0,
+    "peso_atributos": 1.0,
+    "incluir_derivados": false,
+    "incluir_preco": false
+  },
+  "percentil": 25,
+  "local": "distancia",
+  "tau": 200,
+  "centro": "usuario",
+  "centro_local_novo": "fixo",
+  "pesos_cenario1": {
+    "alfa": 0.1,
+    "beta": 0.2,
+    "gama": 0.5,
+    "delta": 0.2
+  },
+  "pesos_cenario2": {
+    "alfa": 0.05,
+    "beta": 0.19,
+    "gama": 0.475,
+    "delta": 0.285
+  },
+  "pesos_cenario3": {
+    "alfa": 0.5,
+    "gama": 0.5
+  },
+  "cota_novos": 1,
+  "categorias_usuario_novo": "peso",
+  "regularizacao_vies": 10,
+  "criterio": "entre as combinações com conversão@10 de pelo menos 95% da melhor, a de maior AUC de gosto (cenários 1 e 2) ou de consumo (cenário 3)"
+}
