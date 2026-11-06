@@ -211,7 +211,13 @@ with aba_demo:
         topo = linhas_demo[0]["tabela"]
         mapa, lista_historico = st.columns([3, 2])
         with mapa:
-            st.markdown(f"**Onde avalia** (verde) **e o top {n}** (terracota)")
+            st.markdown("**No mapa: onde o usuário avalia e o que recomendamos**")
+            st.html(
+                f'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:0.9rem;margin:-6px 0 6px">'
+                f'<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:{SALVIA};margin-right:6px"></span>Locais onde o usuário já avaliou</span>'
+                f'<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:{TERRACOTA};margin-right:6px"></span>Top {n} recomendados para ele</span>'
+                f"</div>"
+            )
             avaliados = locais.loc[modelo.treino.loc[modelo.treino["user_id"] == usuario_demo, "gmap_id"], ["latitude", "longitude"]].assign(cor=SALVIA, tamanho=500)
             recomendados = locais.loc[topo["gmap_id"], ["latitude", "longitude"]].assign(cor=TERRACOTA, tamanho=350)
             pontos = pd.concat([avaliados, recomendados]).dropna(subset=["latitude", "longitude"])
