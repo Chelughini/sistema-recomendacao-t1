@@ -325,6 +325,73 @@ def slide_tabela(p, titulo, mensagem, linhas, larguras, fala, legenda=None, tama
     return s
 
 
+def paineis(s, proporcoes, subtitulos=None, topo=TOPO_CARTAO, base=BASE_CARTAO):
+    """Cartões lado a lado, com as larguras nas proporções dadas; devolve a área interna de cada um."""
+    vao = 0.3
+    util = LARGURA - 2 * MARGEM - vao * (len(proporcoes) - 1)
+    areas, x = [], MARGEM
+    for k, proporcao in enumerate(proporcoes):
+        largura = util * proporcao
+        cartao(s, x, topo, largura, base - topo)
+        y = topo + 0.3
+        if subtitulos and subtitulos[k]:
+            texto(s, x + 0.35, y, largura - 0.7, 0.45, subtitulos[k], tamanho=18, cor=SALVIA, fonte=FONTE_TITULO, negrito=True, espaco=0)
+            y += 0.6
+        areas.append((x + 0.35, y, largura - 0.7, base - y - 0.3))
+        x += largura + vao
+    return areas
+
+
+def leituras(s, area, itens, tamanho_valor=30):
+    """Leituras de um gráfico: número (ou rótulo) em destaque e uma frase curta, empilhados na área."""
+    x, y, w, h = area
+    passo = h / len(itens)
+    for k, (valor, frase, cor) in enumerate(itens):
+        yk = y + k * passo
+        if valor:
+            texto(s, x, yk, w, 0.6, valor, tamanho=tamanho_valor, cor=cor, fonte=FONTE_TITULO, negrito=True, espaco=0)
+            texto(s, x, yk + 0.62, w, passo - 0.65, frase, tamanho=16, espaco=0)
+        else:
+            texto(s, x, yk, w, passo, frase, tamanho=17, cor=cor or TEXTO, negrito=True, espaco=0)
+
+
+def slide_figura_leitura(p, titulo, mensagem, caminho, itens, fala, proporcao=0.66, tamanho_valor=30):
+    """Gráfico à esquerda e, à direita, o que olhar nele (2 ou 3 leituras)."""
+    s = novo_slide(p, titulo, mensagem)
+    area_figura, area_leitura = paineis(s, [proporcao, 1 - proporcao])
+    imagem(s, caminho, *area_figura)
+    leituras(s, area_leitura, itens, tamanho_valor)
+    notas(s, fala)
+    return s
+
+
+def slide_duas_figuras(p, titulo, mensagem, figuras, fala):
+    """Dois gráficos lado a lado, cada um com uma frase embaixo."""
+    s = novo_slide(p, titulo, mensagem)
+    for (x, y, w, h), (caminho, frase) in zip(paineis(s, [0.5, 0.5]), figuras):
+        base_figura = imagem(s, caminho, x, y, w, h - 0.8, topo=True)
+        texto(s, x, base_figura + 0.25, w, 0.7, frase, tamanho=LEGENDA, negrito=True, espaco=0)
+    notas(s, fala)
+    return s
+
+
+def slide_tela(p, titulo, mensagem, caminho, itens, fala):
+    """Tela da interface na largura toda e, embaixo, uma faixa com três destaques numerados."""
+    s = novo_slide(p, titulo, mensagem)
+    altura_tela = 3.95
+    cartao(s, MARGEM, TOPO_CARTAO, LARGURA - 2 * MARGEM, altura_tela)
+    imagem(s, caminho, MARGEM + 0.3, TOPO_CARTAO + 0.2, LARGURA - 2 * MARGEM - 0.6, altura_tela - 0.4)
+    y = TOPO_CARTAO + altura_tela + 0.25
+    largura = (LARGURA - 2 * MARGEM - 0.6) / 3
+    for k, (_, frase, cor) in enumerate(itens):
+        x = MARGEM + k * (largura + 0.3)
+        cartao(s, x, y, largura, BASE_CARTAO - y)
+        circulo(s, x + 0.25, y + (BASE_CARTAO - y - 0.5) / 2, k + 1, cor, d=0.5)
+        texto(s, x + 0.95, y, largura - 1.15, BASE_CARTAO - y, frase, tamanho=16, negrito=True, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+    notas(s, fala)
+    return s
+
+
 # ---------------------------------------------------------------- Recortes das telas
 def preparar_recortes():
     RECORTES.mkdir(parents=True, exist_ok=True)
@@ -397,25 +464,31 @@ def roteiro(p):
 # ---------------------------------------------------------------- 1. Sistema
 def sistema(p):
     secao("sistema")
-    slide_cartoes(p, "O sistema", "Recomendar onde comer a quem avalia no Google, em três situações", [
-        (1, TERRACOTA, "Usuário antigo", "Uma lista de locais a partir do histórico de notas"),
-        (2, SALVIA, "Usuário novo", "Uma lista a partir do que a pessoa informa"),
-        (3, MOSTARDA, "Local novo", "Para quais usuários indicar um local recém-aberto"),
-    ], "O enunciado pede três cenários, e eles são frequentes na base: 66% dos usuários têm uma única avaliação, e de 51% a 57% das avaliações vêm de usuários novos.")
-
-    s = novo_slide(p, "Como o sistema decide", "Dos dados à lista com explicação, em cinco etapas")
-    etapas = ["Avaliações e dados dos locais", "Características e escores de cada local", "Perfil do usuário", "Pontuação de cada local", "Lista com explicação"]
-    largura, vao = 2.15, 0.42
+    s = novo_slide(p, "O sistema", "Recomendar onde comer a quem avalia no Google, em três situações")
+    largura = (LARGURA - 2 * MARGEM - 0.6) / 3
+    cenarios = [(TERRACOTA, "Usuário antigo", "Uma lista a partir do histórico de notas"),
+                (SALVIA, "Usuário novo", "Uma lista a partir do que a pessoa informa"),
+                (MOSTARDA, "Local novo", "Para quais usuários indicar um local recém-aberto")]
+    for k, (cor, nome, descricao) in enumerate(cenarios):
+        x = MARGEM + k * (largura + 0.3)
+        cartao(s, x, TOPO_CARTAO, largura, 2.35)
+        circulo(s, x + 0.3, TOPO_CARTAO + 0.3, k + 1, cor, d=0.6)
+        texto(s, x + 1.1, TOPO_CARTAO + 0.38, largura - 1.3, 0.5, nome, tamanho=20, negrito=True, fonte=FONTE_TITULO, espaco=0)
+        texto(s, x + 0.3, TOPO_CARTAO + 1.15, largura - 0.6, 1.0, descricao, tamanho=CORPO, espaco=0)
+    y = TOPO_CARTAO + 2.7
+    texto(s, MARGEM, y, 6, 0.4, "Como o sistema decide", tamanho=18, cor=SALVIA, fonte=FONTE_TITULO, negrito=True, espaco=0)
+    etapas = ["Avaliações e dados dos locais", "Características e escores do local", "Perfil do usuário", "Pontuação de cada local", "Lista com explicação"]
+    largura, vao = 2.2, 0.38
     x0 = (LARGURA - (5 * largura + 4 * vao)) / 2
-    y = TOPO_CARTAO + 1.3
+    y += 0.55
     for k, etapa in enumerate(etapas):
         x = x0 + k * (largura + vao)
-        cartao(s, x, y, largura, 2.4)
-        circulo(s, x + (largura - 0.6) / 2, y + 0.3, k + 1, CORES[k % 3])
-        texto(s, x + 0.15, y + 1.1, largura - 0.3, 1.2, etapa, tamanho=16, negrito=True, alinhar=PP_ALIGN.CENTER, espaco=0)
+        cartao(s, x, y, largura, 1.55, cor=TINTA_CARTAO)
+        texto(s, x + 0.15, y, largura - 0.3, 1.55, etapa, tamanho=16, negrito=True, alinhar=PP_ALIGN.CENTER, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
         if k < 4:
-            seta(s, x + largura + 0.06, y + 1.2, x + largura + vao - 0.06, y + 1.2)
-    notas(s, "O sistema descreve cada local por suas características e escores, monta um perfil de cada usuário, pontua os locais e devolve os 10 primeiros, cada um com o porquê ('porque você gostou de X').")
+            seta(s, x + largura + 0.05, y + 0.78, x + largura + vao - 0.05, y + 0.78)
+    notas(s, "O enunciado pede três cenários, e eles são frequentes na base: 66% dos usuários têm uma única avaliação, e de 51% a 57% das avaliações vêm de usuários novos. "
+             "O sistema descreve cada local por suas características e escores, monta um perfil de cada usuário, pontua os locais e devolve os 10 primeiros, cada um com o porquê.")
 
 
 # ---------------------------------------------------------------- 2. Base
@@ -429,86 +502,105 @@ def base(p):
         ("2008–2021", "período das avaliações", TEXTO),
         ("99,87%", "da matriz usuário × local está vazia", SALVIA),
     ], "A base atende a exigência do enunciado: cada avaliação tem usuário e nota. Fonte: McAuley Lab (UCSD), recorte do estado de Wyoming pela categoria principal de alimentação. A matriz quase vazia limita qualquer técnica que dependa de histórico em comum.")
-    slide_figura(p, "As notas são altas", "78% das avaliações são 4 ou 5", GRAFICOS / "base_notas.png",
-                 "Por isso, \"relevante\" no trabalho é nota 4 ou mais", "A nota 5 sozinha tem 55,6% das avaliações. Notas de 1 a 3 são o sinal mais raro.")
-    slide_figura(p, "Pouco histórico por pessoa", "66% dos usuários avaliaram um único local", GRAFICOS / "base_atividade.png",
-                 "Só 10,4% têm 5 ou mais avaliações", "A maioria das pessoas tem pouquíssimo histórico, o que torna importante o cenário de usuário novo e limita as técnicas colaborativas.")
-    slide_figura(p, "Atenção concentrada", "20% dos locais recebem 61% das avaliações", GRAFICOS / "base_concentracao.png",
-                 "O mais avaliado é o Texas Roadhouse de Cheyenne, com 2.598", "Índice de Gini de 0,587: a atenção é concentrada, mas sem domínio extremo. A mediana é de 123 avaliações por local.")
-    slide_figura(p, "Categorias", "Fast food é a categoria mais avaliada e a de menor nota", GRAFICOS / "base_categorias.png",
-                 "Fast food: 74.061 avaliações e nota 3,72 · Cafe: a maior nota, 4,45", "A nota varia por categoria, o que abre espaço para usar a qualidade do local como sinal.")
-    slide_figura(p, "Cidades em ilhas", "As pessoas avaliam sobretudo na própria cidade", GRAFICOS / "base_mapa.png",
-                 "75% das avaliações de uma pessoa ficam na cidade principal dela", "Os locais formam aglomerados isolados, com grandes vazios entre as cidades: a localização deve pesar na recomendação.")
-    slide_figura(p, "Avaliações por mês", "Julho tem 2 vezes o movimento de fevereiro", GRAFICOS / "base_por_mes.png", None,
-                 "De 2017 a 2019; 3,29 vezes nas cidades turísticas. Por isso a validação cobre um ano inteiro.")
+    slide_figura_leitura(p, "As notas são altas", "A maioria das avaliações é positiva", GRAFICOS / "base_notas.png", [
+        ("78%", "das avaliações são nota 4 ou 5", TERRACOTA),
+        ("55,6%", "são nota 5", SALVIA),
+        (None, "Por isso, no trabalho, \"relevante\" é nota 4 ou mais", TERRACOTA),
+    ], "Notas de 1 a 3 são o sinal mais raro. Isso apoia considerar relevante a nota 4 ou mais, nas métricas de conversão e de gosto.")
+    slide_duas_figuras(p, "Pouco histórico, atenção concentrada", "Há pouco sinal em comum entre usuários", [
+        (GRAFICOS / "base_atividade.png", "66% dos usuários avaliaram um único local"),
+        (GRAFICOS / "base_concentracao.png", "20% dos locais recebem 61% das avaliações"),
+    ], "Só 10,4% dos usuários têm 5 ou mais avaliações, e a atenção se concentra nos locais populares (Gini de 0,587; o mais avaliado é o Texas Roadhouse de Cheyenne, com 2.598). "
+       "Isso limita as técnicas colaborativas e torna importante o cenário de usuário novo.")
+    slide_figura_leitura(p, "Categorias", "A nota varia conforme o tipo de local", GRAFICOS / "base_categorias.png", [
+        ("74.061", "avaliações de fast food, a categoria mais avaliada", TERRACOTA),
+        ("3,72", "a nota média de fast food, a menor entre as maiores", SALVIA),
+        (None, "A qualidade do local é um sinal útil: o escore", TERRACOTA),
+    ], "Cafe tem a maior nota (4,45). A nota varia por categoria, o que abre espaço para usar a qualidade do local como sinal.")
+    slide_figura_leitura(p, "Cidades em ilhas", "As pessoas avaliam sobretudo na própria cidade", GRAFICOS / "base_mapa.png", [
+        ("75%", "das avaliações de uma pessoa ficam na cidade principal dela", TERRACOTA),
+        ("115", "cidades, em aglomerados com grandes vazios entre eles", SALVIA),
+        (None, "A localização deve pesar na recomendação", TERRACOTA),
+    ], "Cheyenne, Casper e Jackson concentram as avaliações. Os locais formam ilhas, e as pessoas ficam perto de onde costumam ir.", proporcao=0.6)
 
 
 # ---------------------------------------------------------------- 3. Teoria
 def teoria(p):
     secao("teoria")
-    slide_tabela(p, "Por que conteúdo e escores de produto", "É a única das quatro técnicas que atende os três cenários usando as notas", [
+    s = novo_slide(p, "Por que conteúdo e escores de produto", "É a única das quatro técnicas que atende os três cenários usando as notas")
+    area_tabela, area_dados = paineis(s, [0.62, 0.38], ["As quatro técnicas", "O que os dados mostraram"])
+    tabela(s, [
         ["Técnica", "Usuário novo", "Local novo"],
         ["Conteúdo e escores de produto", "Atende", "Atende"],
         ["Vizinhos próximos", "Não atende", "Não atende"],
         ["Bases de conhecimento", "Atende", "Sem usar as notas"],
         ["Redes e grafos", "Não atende", "Não atende"],
-    ], [0.46, 0.27, 0.27], "Vizinhos e grafos precisam de avaliações em comum, que o usuário novo e o local novo não têm. Bases de conhecimento não usariam as notas dos usuários. "
-       "Os dados apoiam os componentes: no 5-core, o 20º vizinho de um usuário tem só 4 locais em comum; o local explica 11,5% da variância da nota; e 75% das avaliações de uma pessoa ficam na cidade principal dela.", destacar=1)
+    ], area_tabela[0], area_tabela[1], area_tabela[2], 3.0, [0.46, 0.27, 0.27], tamanho=16, destacar=1)
+    leituras(s, area_dados, [
+        ("4", "locais em comum com o 20º vizinho de um usuário", TERRACOTA),
+        ("11,5%", "da variância da nota vem do local", SALVIA),
+        ("75%", "das avaliações na cidade principal", MOSTARDA),
+    ], tamanho_valor=28)
+    notas(s, "Vizinhos e grafos precisam de avaliações em comum, que o usuário novo e o local novo não têm. Bases de conhecimento não usariam as notas dos usuários. "
+             "Os dados apoiam os componentes: vizinhos por usuário têm pouquíssima sobreposição; o local explica parte da nota, o que justifica o escore; e as pessoas ficam na própria cidade, o que justifica a localização.")
 
-    slide_cartoes(p, "O método em uma ideia", "Para cada local, o sistema faz quatro perguntas", [
-        (1, TERRACOTA, "É parecido com o que você gostou?", "Conteúdo"),
-        (2, SALVIA, "É bom?", "Escore"),
-        (3, MOSTARDA, "É perto de onde você anda?", "Localização"),
-        (4, TEXTO, "Muita gente vai?", "Popularidade"),
-    ], "A primeira pergunta é o conteúdo: o local se parece com os que a pessoa gostou? As outras três são os escores de produto, que descrevem o local em si. Nos próximos slides, cada uma com um exemplo.")
+    s = novo_slide(p, "O método em uma ideia", "Para cada local, o sistema faz quatro perguntas e soma as respostas")
+    perguntas = [(TERRACOTA, "É parecido com o que você gostou?", "Conteúdo"), (SALVIA, "É bom?", "Escore"),
+                 (MOSTARDA, "É perto de onde você anda?", "Localização"), (TEXTO, "Muita gente vai?", "Popularidade")]
+    largura = (LARGURA - 2 * MARGEM - 0.9) / 4
+    for k, (cor, pergunta, nome) in enumerate(perguntas):
+        x = MARGEM + k * (largura + 0.3)
+        cartao(s, x, TOPO_CARTAO, largura, 3.45)
+        circulo(s, x + 0.3, TOPO_CARTAO + 0.3, k + 1, cor, d=0.6)
+        texto(s, x + 0.3, TOPO_CARTAO + 1.1, largura - 0.6, 1.4, pergunta, tamanho=20, negrito=True, fonte=FONTE_TITULO, espaco=0)
+        texto(s, x + 0.3, TOPO_CARTAO + 2.75, largura - 0.6, 0.5, nome, tamanho=CORPO, negrito=True, cor=cor if cor != TEXTO else SUAVE, espaco=0)
+    y = TOPO_CARTAO + 3.75
+    cartao(s, MARGEM, y, LARGURA - 2 * MARGEM, BASE_CARTAO - y)
+    texto(s, MARGEM + 0.3, y + 0.2, LARGURA - 2 * MARGEM - 0.6, 1.4, [
+        [("pontuação = α × conteúdo + β × escore + γ × localização + δ × popularidade", {"negrito": True, "cor": TERRACOTA, "tamanho": 22})],
+        [("Cada resposta vai de 0 a 1. A lista são os 10 locais com maior pontuação, entre os abertos que a pessoa não avaliou.", {})],
+    ], tamanho=16, alinhar=PP_ALIGN.CENTER, ancora=MSO_ANCHOR.MIDDLE, espaco=10)
+    notas(s, "A primeira pergunta é o conteúdo; as outras três são os escores de produto, que descrevem o local em si. Os pesos α, β, γ e δ são escolhidos na validação (seção 6). Nos próximos slides, cada pergunta com um exemplo.")
 
-    s = novo_slide(p, "A pontuação", "Cada resposta vira um número de 0 a 1, e a pontuação soma as quatro com pesos")
-    cartao(s, MARGEM, TOPO_CARTAO, LARGURA - 2 * MARGEM, BASE_CARTAO - TOPO_CARTAO)
-    texto(s, MARGEM + 0.3, TOPO_CARTAO + 1.3, LARGURA - 2 * MARGEM - 0.6, 0.8,
-          "pontuação = α × conteúdo + β × escore + γ × localização + δ × popularidade", tamanho=26, cor=TERRACOTA, negrito=True, alinhar=PP_ALIGN.CENTER, espaco=0)
-    texto(s, MARGEM + 0.5, TOPO_CARTAO + 2.9, LARGURA - 2 * MARGEM - 1.0, 1.5, [
-        "A lista são os 10 locais com maior pontuação,",
-        "entre os abertos que a pessoa ainda não avaliou.",
-    ], tamanho=22, alinhar=PP_ALIGN.CENTER, espaco=4)
-    notas(s, "Os pesos α, β, γ e δ são escolhidos na validação (seção 6).")
-
+    s = novo_slide(p, "Passo 1: o local vira uma lista", "Cada local é descrito pelas características que ele mesmo informa")
+    area_exemplo, area_pesos = paineis(s, [0.62, 0.38], ["Exemplo com três locais", "Raras pesam mais (TF-IDF)"])
     linhas = [["Local"] + CARACTERISTICAS] + [[nome] + ["✓" if marca else "" for marca in vetor] for nome, vetor, _ in AVALIADOS]
-    slide_tabela(p, "Passo 1: o local vira uma lista", "Cada local é descrito pelas características que ele mesmo informa", linhas, [0.2] + [0.16] * 5,
-                 "Na base real são 167 características: 136 categorias (pizzaria, café, churrascaria…) e 31 atributos (entrega, acessibilidade, formas de pagamento…). Só entra o que um local recém-aberto poderia informar.",
-                 legenda="Na base real: 167 características, entre categorias e atributos")
-
-    slide_numeros(p, "Características raras pesam mais", "O TF-IDF dá mais peso ao que distingue um local", [
+    tabela(s, linhas, area_exemplo[0], area_exemplo[1], area_exemplo[2], 2.2, [0.22] + [0.156] * 5, tamanho=14)
+    texto(s, area_exemplo[0], area_exemplo[1] + 2.7, area_exemplo[2], 1.2, "Na base real: 167 características, entre 136 categorias e 31 atributos (entrega, acessibilidade, pagamento…)", tamanho=16, espaco=0)
+    leituras(s, area_pesos, [
         ("1,08", "peso de \"Entrega\": quase todo local tem", SUAVE),
         ("7,31", "peso de \"Loja de pretzel\": pouquíssimos têm", TERRACOTA),
-    ], "O TF-IDF multiplica cada característica pelo quanto ela é rara na base. Depois, cada vetor é normalizado para ter tamanho 1, e a comparação fica justa entre locais com muitas e poucas características.", colunas=2)
+    ], tamanho_valor=34)
+    notas(s, "Cada coluna é uma característica, e cada local é uma linha: um vetor. Só entra o que um local recém-aberto poderia informar. O TF-IDF multiplica cada característica pelo quanto ela é rara; depois, cada vetor é normalizado para ter tamanho 1.")
 
     media, pesos, perfil, similaridades = exemplo_ana()
-    slide_tabela(p, "Passo 2: o usuário vira um perfil", f"A Ana avaliou três locais; a média dela é {br(media)}",
-                 [["Local", "Nota", "Nota − média"]] + [[nome, str(nota), sinal(peso)] for (nome, _, nota), peso in zip(AVALIADOS, pesos)],
-                 [0.4, 0.25, 0.35], "Cada local entra no perfil com o peso da nota menos a média da pessoa: o que ela avaliou acima da própria média soma; o que avaliou abaixo, subtrai.",
-                 legenda="Acima da média soma ao perfil; abaixo, subtrai")
-
-    s = novo_slide(p, "O perfil da Ana", "Ela gosta de pizzaria e não gosta de café")
-    cartao(s, MARGEM, TOPO_CARTAO, LARGURA - 2 * MARGEM, BASE_CARTAO - TOPO_CARTAO)
+    s = novo_slide(p, "Passo 2: o usuário vira um perfil", f"A Ana avaliou três locais (média {br(media)}): ela gosta de pizzaria e não gosta de café")
+    area_notas, area_perfil = paineis(s, [0.42, 0.58], ["As notas da Ana", "O perfil da Ana"])
+    tabela(s, [["Local", "Nota", "Nota − média"]] + [[nome, str(nota), sinal(peso)] for (nome, _, nota), peso in zip(AVALIADOS, pesos)],
+           area_notas[0], area_notas[1], area_notas[2], 1.9, [0.42, 0.22, 0.36], tamanho=15)
+    texto(s, area_notas[0], area_notas[1] + 2.35, area_notas[2], 1.4, "Acima da própria média soma ao perfil; abaixo, subtrai", tamanho=16, negrito=True, cor=TERRACOTA, espaco=0)
+    x, y, w, _ = area_perfil
     maior = max(abs(v) for v in perfil)
-    meio = LARGURA / 2 + 0.6
-    meia = 3.6
-    topo = TOPO_CARTAO + 0.55
+    meio = x + 2.3 + (w - 2.3) / 2
+    meia = (w - 2.3) / 2 - 0.75
     for k, (nome, valor) in enumerate(zip(CARACTERISTICAS, perfil)):
-        y = topo + k * 0.92
-        texto(s, MARGEM + 0.6, y, 3.4, 0.6, nome, tamanho=CORPO, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
+        yk = y + 0.1 + k * 0.78
+        texto(s, x, yk, 2.2, 0.5, nome, tamanho=16, ancora=MSO_ANCHOR.MIDDLE, espaco=0)
         comprimento = abs(valor) / maior * meia
         if comprimento > 0.01:
-            retangulo(s, meio if valor > 0 else meio - comprimento, y + 0.1, comprimento, 0.42, TERRACOTA if valor > 0 else SALVIA)
-        x = meio + comprimento + 0.12 if valor > 0 else meio - comprimento - 1.0
-        texto(s, x, y, 0.9, 0.6, sinal(valor), tamanho=CORPO, negrito=True, ancora=MSO_ANCHOR.MIDDLE, alinhar=PP_ALIGN.LEFT if valor > 0 else PP_ALIGN.RIGHT, espaco=0)
-    linha = s.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(meio), Inches(topo - 0.1), Inches(meio), Inches(topo + 5 * 0.92 - 0.2))
+            retangulo(s, meio if valor > 0 else meio - comprimento, yk + 0.08, comprimento, 0.36, TERRACOTA if valor > 0 else SALVIA)
+        xk = meio + comprimento + 0.08 if valor > 0 else meio - comprimento - 0.78
+        texto(s, xk, yk, 0.7, 0.5, sinal(valor), tamanho=14, negrito=True, ancora=MSO_ANCHOR.MIDDLE, alinhar=PP_ALIGN.LEFT if valor > 0 else PP_ALIGN.RIGHT, espaco=0)
+    linha = s.shapes.add_connector(MSO_CONNECTOR.STRAIGHT, Inches(meio), Inches(y), Inches(meio), Inches(y + 5 * 0.78))
     linha.line.color.rgb = SUAVE
     linha.line.width = Pt(1.25)
-    notas(s, "O perfil é a soma das características com esses pesos: pizzaria +1,33, café −1,67. 'Entrega' fica levemente negativa porque aparece na pizzaria (gostou) e no café (não gostou).")
+    notas(s, "Cada local entra no perfil com o peso da nota menos a média da pessoa. A pizzaria soma 1,33; o café subtrai 1,67. 'Entrega' fica levemente negativa porque aparece na pizzaria, de que ela gostou, e no café, de que não gostou.")
 
-    slide_figura(p, "O perfil de um usuário real", "Usuário #12.369, de Riverton", GRAFICOS / "teoria_perfil_usuario.png",
-                 None, "O mesmo cálculo, num usuário real da base, como aparece na interface: restaurante americano e mesas ao ar livre de um lado; restaurante genérico e drive-thru do outro.")
+    slide_figura_leitura(p, "O perfil de um usuário real", "Usuário #12.369, de Riverton: a mesma conta da Ana", GRAFICOS / "teoria_perfil_usuario.png", [
+        ("Gosta mais", "restaurante americano, mesas ao ar livre, restaurante italiano", TERRACOTA),
+        ("Gosta menos", "restaurante genérico, elevador acessível, drive-thru", SALVIA),
+        (None, "É esse perfil que o cosseno compara com cada local", TEXTO),
+    ], "O mesmo cálculo, num usuário real da base, como aparece na aba Demonstração da interface.", tamanho_valor=24)
 
     s = novo_slide(p, "Passo 3: \"parecido\" é o cosseno", "Compara o perfil com cada local: perto de 1 é parecido; perto de 0, o oposto")
     largura = (LARGURA - 2 * MARGEM - 0.3) / 2
@@ -523,19 +615,18 @@ def teoria(p):
              f"{br(similaridades[0][1])}; o Café E, com {br(similaridades[1][1])}. Atenção: o cosseno mede o tipo de lugar, não a qualidade — por isso entram os escores.")
 
     s = novo_slide(p, "Passo 4: o escore do local", "Uma média que desconfia de quem tem poucas avaliações")
-    largura = (LARGURA - 2 * MARGEM - 0.3) / 2
-    casos = [("2 avaliações", "média 5,0", "4,18", SALVIA), ("400 avaliações", "média 4,7", "4,65", TERRACOTA)]
-    for k, (avaliacoes, media_local, escore, cor) in enumerate(casos):
-        x = MARGEM + k * (largura + 0.3)
-        cartao(s, x, TOPO_CARTAO, largura, BASE_CARTAO - TOPO_CARTAO - 1.0)
-        texto(s, x + 0.45, TOPO_CARTAO + 0.4, largura - 0.9, 0.6, avaliacoes, tamanho=26, negrito=True, fonte=FONTE_TITULO, espaco=0)
-        texto(s, x + 0.45, TOPO_CARTAO + 1.1, largura - 0.9, 0.6, media_local, tamanho=CORPO, cor=SUAVE, espaco=0)
-        texto(s, x + 0.45, TOPO_CARTAO + 2.0, largura - 0.9, 1.4, escore, tamanho=72, cor=cor, fonte=FONTE_TITULO, negrito=True, espaco=0)
-    texto(s, MARGEM, BASE_CARTAO - 0.7, LARGURA - 2 * MARGEM, 0.6, "Com poucas avaliações, o escore fica perto da média geral (4,13)", tamanho=22, cor=TERRACOTA, negrito=True, alinhar=PP_ALIGN.CENTER, espaco=0)
-    notas(s, "É a média bayesiana: escore = (v · média do local + m · 4,13) / (v + m), com m = 36,8 avaliações. Sem isso, um local com duas notas 5 passaria à frente de um com 400 avaliações e média 4,7.")
-
-    slide_figura(p, "Escore bayesiano na base", "Com poucas avaliações, o escore fica perto da média geral", GRAFICOS / "teoria_escore.png", None,
-                 "Cada ponto é um local: a média simples das notas contra o escore. Os locais com poucas avaliações (cores claras) ficam perto da média geral, 4,13; os com muitas, perto da diagonal.")
+    area_exemplos, area_grafico = paineis(s, [0.36, 0.64])
+    x, y, w, h = area_exemplos
+    for k, (avaliacoes, media_local, escore, cor) in enumerate([("2 avaliações", "média 5,0", "4,18", SALVIA), ("400 avaliações", "média 4,7", "4,65", TERRACOTA)]):
+        yk = y + k * 2.2
+        cartao(s, x - 0.1, yk, w + 0.2, 1.95, cor=TINTA_CARTAO)
+        texto(s, x + 0.15, yk + 0.2, w - 0.3, 0.45, avaliacoes, tamanho=20, negrito=True, fonte=FONTE_TITULO, espaco=0)
+        texto(s, x + 0.15, yk + 0.68, w - 0.3, 0.4, media_local, tamanho=16, cor=SUAVE, espaco=0)
+        texto(s, x + 0.15, yk + 1.05, w - 0.3, 0.8, f"escore {escore}", tamanho=30, cor=cor, fonte=FONTE_TITULO, negrito=True, espaco=0)
+    texto(s, x, y + 4.5, w, 0.8, "Média geral: 4,13", tamanho=16, negrito=True, cor=TERRACOTA, espaco=0)
+    imagem(s, GRAFICOS / "teoria_escore.png", *area_grafico)
+    notas(s, "É a média bayesiana: escore = (v · média do local + m · 4,13) / (v + m), com m = 36,8 avaliações. Com poucas avaliações, o escore fica perto da média geral; com muitas, perto da média do próprio local. "
+             "No gráfico, cada ponto é um local: os de cor clara, com poucas avaliações, ficam perto da linha de 4,13.")
 
     slide_tabela(p, "Passo 4: perto e conhecido", "A localização cai com a distância; a popularidade cresce devagar", [
         ["Distância até onde a pessoa avalia", "Localização", "Avaliações do local", "Popularidade"],
@@ -608,9 +699,11 @@ def tratamento(p):
 # ---------------------------------------------------------------- 5. Treino e teste
 def divisao(p):
     secao("divisao")
-    slide_figura(p, "Divisão no tempo", "O modelo aprende com o passado e é medido no futuro", GRAFICOS / "divisao_tempo.png",
-                 "Treino até 03/2019 · validação de 1 ano · teste a partir de 03/2020, usado uma única vez",
-                 "Treino: 213.626 avaliações. Validação: 130.071, um ano inteiro para cobrir o verão. Teste: 85.925, 20% das avaliações. Os hiperparâmetros foram escolhidos na validação; o modelo final foi reajustado com treino e validação e medido uma vez no teste, que começa na pandemia.")
+    slide_figura_leitura(p, "Divisão no tempo", "O modelo aprende com o passado e é medido no futuro", GRAFICOS / "divisao_tempo.png", [
+        ("até 03/2019", "treino: 213.626 avaliações", SALVIA),
+        ("1 ano", "de validação, para cobrir o verão: julho tem 2 vezes o movimento de fevereiro", MOSTARDA),
+        ("20%", "das avaliações no teste, a partir de 03/2020, usado uma única vez", TERRACOTA),
+    ], "Os hiperparâmetros foram escolhidos na validação; o modelo final foi reajustado com treino e validação e medido uma vez no teste, que começa na pandemia e rareia no fim da coleta.", proporcao=0.64, tamanho_valor=26)
     slide_cartoes(p, "Quem é medido", "Cada cenário tem o seu público no teste", [
         (1, TERRACOTA, "Usuário antigo", "3 ou mais avaliações no treino"),
         (2, SALVIA, "Usuário novo", "Sem histórico; a 1ª avaliação simula o cadastro"),
@@ -621,41 +714,59 @@ def divisao(p):
 # ---------------------------------------------------------------- 6. Estimação
 def estimacao(p):
     secao("estimacao")
-    slide_numeros(p, "O que foi estimado", "Com treino + validação: 343.697 avaliações", [
-        ("4,132", "nota média: o ponto de partida do escore", TERRACOTA),
-        ("36,8", "avaliações de peso para a média geral", TERRACOTA),
-        ("140.895", "perfis de usuário", SALVIA),
-        ("167", "características no vocabulário", SALVIA),
-        ("200 km", "alcance da localização", MOSTARDA),
-        ("10", "regularização do viés na nota prevista", MOSTARDA),
-    ], "Estimar o modelo, aqui, é calcular os escores, os perfis e o vocabulário a partir das avaliações, e escolher os hiperparâmetros na validação. Tudo foi congelado antes de abrir o teste.")
-    slide_tabela(p, "Os pesos de cada cenário", "Escolhidos na validação e congelados antes do teste", [
+    s = novo_slide(p, "O que foi estimado", "Com treino + validação (343.697 avaliações), e os pesos escolhidos na validação")
+    area_numeros, area_pesos = paineis(s, [0.44, 0.56], ["Calculado das avaliações", "Pesos de cada cenário"])
+    x, y, w, h = area_numeros
+    estimados = [("4,132", "nota média: o ponto de partida do escore", TERRACOTA), ("36,8", "avaliações de peso para essa média", TERRACOTA),
+                 ("140.895", "perfis de usuário", SALVIA), ("167", "características", SALVIA),
+                 ("200 km", "alcance da localização", MOSTARDA), ("10", "regularização do viés", MOSTARDA)]
+    for k, (valor, rotulo, cor) in enumerate(estimados):
+        xk = x + (k % 2) * (w / 2)
+        yk = y + (k // 2) * (h / 3)
+        texto(s, xk, yk, w / 2 - 0.15, 0.55, valor, tamanho=26, cor=cor, fonte=FONTE_TITULO, negrito=True, espaco=0)
+        texto(s, xk, yk + 0.58, w / 2 - 0.15, h / 3 - 0.6, rotulo, tamanho=14, espaco=0)
+    tabela(s, [
         ["Cenário", "Conteúdo", "Escore", "Localização", "Popularidade"],
         ["Usuário antigo", "0,1", "0,2", "0,5", "0,2"],
         ["Usuário novo", "0,05", "0,19", "0,475", "0,285"],
         ["Local novo", "0,5", "—", "0,5", "—"],
-    ], [0.28, 0.17, 0.15, 0.2, 0.2], "Usuário antigo: perfil centrado na média do usuário. Usuário novo: a categoria declarada entra com peso baixo, não como filtro. Local novo: perfil centrado na nota 3 e cota de 1 local novo na lista.",
-       legenda="A localização tem o maior peso nos três cenários")
-    slide_figura(p, "Como os pesos foram escolhidos", "Ganhar gosto custa conversão: a escolha cede 3,6%", GRAFICOS / "estimacao_pesos.png",
-                 "Critério: conversão ≥ 95% da melhor e, entre essas, o maior gosto",
-                 "Cada ponto é uma das 286 combinações de pesos testadas na validação. A escolhida, 0,1 / 0,2 / 0,5 / 0,2, tem conversão de 0,0739 e AUC de gosto de 0,5850.")
-    slide_figura(p, "O papel de cada componente", "A localização traz a pessoa; o escore acerta o gosto", GRAFICOS / "estimacao_ablacao.png",
-                 "Sem o escore, o gosto cai para 0,485; sem o conteúdo, empata",
-                 "Ablação: tirar ou usar só um componente. Nenhum sozinho passa de 0,0415 de conversão. Sem o conteúdo, as métricas empatam: no cenário 1 ele amplia o catálogo.")
-    slide_tabela(p, "Pesos do usuário novo", "Na validação, a cidade é o que mais ajuda; a categoria entra com peso baixo", [
-        ["Método", "Conversão@10", "AUC de gosto"],
+    ], area_pesos[0], area_pesos[1], area_pesos[2], 2.0, [0.26, 0.17, 0.14, 0.21, 0.22], tamanho=13)
+    texto(s, area_pesos[0], area_pesos[1] + 2.4, area_pesos[2], 1.8, [
+        [("A localização tem o maior peso nos três cenários.", {"negrito": True, "cor": TERRACOTA})],
+        [("Tudo foi escolhido na validação e congelado antes do teste.", {})],
+    ], tamanho=16, espaco=8)
+    notas(s, "Estimar o modelo é calcular os escores, os perfis e o vocabulário a partir das avaliações e escolher os hiperparâmetros na validação. "
+             "Usuário antigo: perfil centrado na média do usuário. Usuário novo: a categoria declarada entra com peso baixo, não como filtro. Local novo: perfil centrado na nota 3 e cota de 1 local novo na lista.")
+    slide_figura_leitura(p, "Como os pesos foram escolhidos", "Ganhar gosto custa conversão: a escolha cede 3,6%", GRAFICOS / "estimacao_pesos.png", [
+        ("0,0739", "conversão@10 da combinação escolhida", TERRACOTA),
+        ("0,5850", "AUC de gosto da escolhida", SALVIA),
+        (None, "Critério: conversão de ao menos 95% da melhor e, entre essas, o maior gosto", TEXTO),
+    ], "Cada ponto é uma das 286 combinações de pesos testadas na validação. A escolhida, 0,1 / 0,2 / 0,5 / 0,2, cede 3,6% da melhor conversão em troca de mais gosto.", proporcao=0.62)
+    slide_figura_leitura(p, "O papel de cada componente", "A localização traz a pessoa; o escore acerta o gosto", GRAFICOS / "estimacao_ablacao.png", [
+        ("0,0415", "a melhor conversão de um componente sozinho", SALVIA),
+        ("0,485", "AUC de gosto sem o escore: abaixo do acaso", TERRACOTA),
+        (None, "Sem o conteúdo, as métricas empatam: ele amplia o catálogo", TEXTO),
+    ], "Ablação: tirar ou usar só um componente. A combinação vale mais que as partes; sem o conteúdo, empata no cenário 1, onde ele amplia o catálogo.", proporcao=0.64)
+    s = novo_slide(p, "Pesos dos outros cenários", "Na validação: a cidade guia o usuário novo; o perfil centrado em 3 guia o local novo")
+    area_novo, area_local = paineis(s, [0.5, 0.5], ["Usuário novo", "Local novo"])
+    tabela(s, [
+        ["Método", "Conversão", "Gosto"],
         ["Popularidade global", "0,0129", "0,4946"],
-        ["Cidade + escore + popularidade", "0,0484", "0,5539"],
-        ["+ categorias, peso 0,05 (escolhido)", "0,0484", "0,5541"],
+        ["Cidade + escore + pop.", "0,0484", "0,5539"],
+        ["+ categorias, peso 0,05", "0,0484", "0,5541"],
         ["+ categorias como filtro", "0,0239", "0,5039"],
-    ], [0.5, 0.25, 0.25], "Como filtro, as categorias derrubam a conversão: só 18,8% do que a pessoa avalia depois tem a categoria declarada.", destacar=3)
-    slide_tabela(p, "Pesos do local novo", "Na validação, o perfil centrado em 3 fez o conteúdo ajudar", [
+    ], area_novo[0], area_novo[1], area_novo[2], 2.6, [0.52, 0.24, 0.24], tamanho=14, destacar=3)
+    texto(s, area_novo[0], area_novo[1] + 3.05, area_novo[2], 1.3, "Escolhido: categorias com peso 0,05, não como filtro", tamanho=16, negrito=True, cor=TERRACOTA, espaco=0)
+    tabela(s, [
         ["Pontuação", "AUC de consumo"],
         ["Aleatória", "0,4994"],
         ["Só localização", "0,9195"],
-        ["Conteúdo + localização, meio a meio (escolhida)", "0,9314"],
+        ["Conteúdo + localização", "0,9314"],
         ["Só conteúdo", "0,6351"],
-    ], [0.7, 0.3], "Com o perfil centrado na média do usuário, o conteúdo sozinho ficava em 0,51. Centrado em 3, ele descreve o tipo de lugar que a pessoa frequenta. No teste, esse ganho não se confirmou.", destacar=3)
+    ], area_local[0], area_local[1], area_local[2], 2.6, [0.64, 0.36], tamanho=14, destacar=3)
+    texto(s, area_local[0], area_local[1] + 3.05, area_local[2], 1.3, "Escolhido: meio a meio, com o perfil centrado na nota 3", tamanho=16, negrito=True, cor=TERRACOTA, espaco=0)
+    notas(s, "Usuário novo: como filtro, as categorias derrubam a conversão, porque só 18,8% do que a pessoa avalia depois tem a categoria declarada. "
+             "Local novo: com o perfil centrado na média do usuário, o conteúdo sozinho ficava em 0,51; centrado em 3, ele descreve o tipo de lugar que a pessoa frequenta. No teste, esse ganho não se confirmou.")
 
 
 # ---------------------------------------------------------------- 7. Performance
@@ -667,47 +778,73 @@ def performance(p):
                 ("Ela gostou?", "AUC de gosto", "curva ROC: os locais bons acima dos ruins", SALVIA)]
     for k, (pergunta, nome, descricao, cor) in enumerate(metricas):
         x = MARGEM + k * (largura + 0.3)
-        cartao(s, x, TOPO_CARTAO, largura, BASE_CARTAO - TOPO_CARTAO)
+        cartao(s, x, TOPO_CARTAO, largura, BASE_CARTAO - TOPO_CARTAO - 1.1)
         texto(s, x + 0.45, TOPO_CARTAO + 0.45, largura - 0.9, 0.6, pergunta, tamanho=22, cor=SUAVE, fonte=FONTE_TITULO, negrito=True, espaco=0)
-        texto(s, x + 0.45, TOPO_CARTAO + 1.3, largura - 0.9, 1.4, nome, tamanho=30, cor=cor, fonte=FONTE_TITULO, negrito=True, espaco=0)
-        texto(s, x + 0.45, TOPO_CARTAO + 2.9, largura - 0.9, 1.5, descricao, tamanho=CORPO + 2, espaco=0)
+        texto(s, x + 0.45, TOPO_CARTAO + 1.25, largura - 0.9, 1.0, nome, tamanho=30, cor=cor, fonte=FONTE_TITULO, negrito=True, espaco=0)
+        texto(s, x + 0.45, TOPO_CARTAO + 2.4, largura - 0.9, 1.2, descricao, tamanho=CORPO + 2, espaco=0)
+    texto(s, MARGEM, BASE_CARTAO - 0.8, LARGURA - 2 * MARGEM, 0.7,
+          "Também: AUC de consumo (local novo), RMSE e MAE da nota, coberturas, novidade e diversidade · IC de 95% em toda comparação",
+          tamanho=16, cor=SUAVE, alinhar=PP_ALIGN.CENTER, espaco=0)
     notas(s, "Só usamos métricas vistas em aula. As duas competem: ordenar pela popularidade converte 7 vezes mais que o acaso, mas empata com ele no gosto. "
-             "No cenário 3, a AUC de consumo: quem avaliou o local novo fica acima de quem não avaliou. De apoio: MAE, MSE e RMSE da nota, correlação de rankings, coberturas, novidade, serendipidade e diversidade. "
-             "Toda comparação tem intervalo de confiança de 95%; se o intervalo inclui zero, é empate.")
-    slide_figura(p, "Usuário antigo", "Empata com o óbvio na conversão e é o único que acerta o gosto", GRAFICOS / "performance_usuario_antigo.png",
-                 "Modelo: conversão@10 de 0,052 e AUC de gosto de 0,554",
-                 "No teste, com 5.663 usuários. Popularidade + local empata na conversão, mas fica abaixo do acaso no gosto (0,452). Vizinhos por item e PageRank convertem até 25% mais, também abaixo do acaso no gosto, e não atendem os cenários 2 e 3.")
-    slide_figura(p, "Usuário novo", "Quase 5 vezes a popularidade global para quem nunca avaliou", GRAFICOS / "performance_usuario_novo.png",
-                 "Conversão@10 de 0,045, contra 0,010 da popularidade",
-                 "No teste, com 6.783 usuários; AUC de gosto de 0,560. A cidade informada é o que mais ajuda; a categoria com peso baixo empata e amplia o catálogo. 100% dos usuários recebem lista.")
-    slide_figura(p, "Local novo", "Quem vai ao local novo fica bem acima dos demais", GRAFICOS / "performance_local_novo.png",
-                 "AUC de consumo de 0,92 · o ganho do conteúdo sobre a localização não se confirmou",
-                 "Nos 100 locais reais: 0,9209 contra 0,9173 só com a localização, empate. Nos simulados, +0,0044. A cota de 1 local novo leva de 21 para 126 as listas que acertam um local novo, com −0,0014 de conversão. O conteúdo pontua 100% dos locais novos; vizinhos e grafos, 0%.")
-    slide_figura(p, "Curvas ROC no teste", "Gosto no usuário antigo e consumo nos locais novos", GRAFICOS / "performance_roc.png", None,
-                 "A curva de gosto tem degraus porque a maioria dos usuários tem um ou dois locais bons e ruins no teste.")
-    slide_numeros(p, "Previsão de nota", "O escore mais o viés do usuário tem o menor erro", [
-        ("1,025", "RMSE com escore + viés", TERRACOTA),
-        ("1,084", "RMSE só com o escore", SALVIA),
-        ("1,134", "RMSE com a média global", TEXTO),
-    ], "Em 21.121 avaliações do teste; MAE de 0,775. O erro de cerca de 1 ponto mostra o pouco espaço para personalizar a nota: por isso o modelo ordena, e a nota prevista entra na interface só como informação.")
+             "Toda comparação tem intervalo de confiança de 95% por bootstrap; se o intervalo inclui zero, é empate.")
+    slide_figura_leitura(p, "Usuário antigo", "Empata com o óbvio na conversão e é o único que acerta o gosto", GRAFICOS / "performance_usuario_antigo.png", [
+        ("0,052", "conversão@10 do modelo, em empate com popularidade + local", TERRACOTA),
+        ("0,554", "AUC de gosto: o único acima do acaso entre os que convertem", SALVIA),
+        ("+25%", "de conversão nos vizinhos por item, mas abaixo do acaso no gosto", MOSTARDA),
+    ], "No teste, com 5.663 usuários. Popularidade + local fica em 0,452 de gosto. As técnicas colaborativas convertem mais para usuários antigos, mas não atendem os cenários 2 e 3.", proporcao=0.64)
+    slide_figura_leitura(p, "Usuário novo", "Quase 5 vezes a popularidade global para quem nunca avaliou", GRAFICOS / "performance_usuario_novo.png", [
+        ("0,045", "conversão@10, contra 0,010 da popularidade global", TERRACOTA),
+        ("0,560", "AUC de gosto", SALVIA),
+        ("100%", "dos usuários recebem lista, mesmo sem informar nada", MOSTARDA),
+    ], "No teste, com 6.783 usuários. A cidade informada é o que mais ajuda; a categoria com peso baixo empata e amplia o catálogo; como filtro, derruba a conversão.", proporcao=0.64)
+    slide_figura_leitura(p, "Local novo", "Quem vai ao local novo fica bem acima dos demais", GRAFICOS / "performance_local_novo.png", [
+        ("0,921", "AUC de consumo nos 100 locais novos reais", TERRACOTA),
+        ("empate", "com só a localização (0,917): o ganho do conteúdo não se confirmou", SALVIA),
+        ("21 → 126", "listas que acertam um local novo, com a cota de 1 vaga", MOSTARDA),
+    ], "Nos simulados, o conteúdo soma 0,0044. A cota custa 0,0014 de conversão. O conteúdo pontua 100% dos locais novos; vizinhos e grafos, 0%.", proporcao=0.62, tamanho_valor=28)
+    s = novo_slide(p, "Curvas ROC e previsão de nota", "O gosto e o consumo na curva; a nota prevista erra cerca de 1 ponto")
+    area_roc, area_nota = paineis(s, [0.66, 0.34], [None, "Previsão de nota (RMSE)"])
+    imagem(s, GRAFICOS / "performance_roc.png", *area_roc)
+    leituras(s, area_nota, [
+        ("1,025", "escore + viés do usuário", TERRACOTA),
+        ("1,084", "só o escore", SALVIA),
+        ("1,134", "média global", TEXTO),
+    ], tamanho_valor=30)
+    notas(s, "À esquerda, as curvas ROC médias por usuário: a de gosto tem degraus porque a maioria tem um ou dois locais bons e ruins no teste. À direita, o RMSE da nota prevista em 21.121 avaliações do teste (MAE de 0,775). "
+             "O erro de cerca de 1 ponto mostra o pouco espaço para personalizar a nota: por isso o modelo ordena, e a nota prevista entra na interface só como informação.")
 
 
 # ---------------------------------------------------------------- 8. Interface
 def interface(p):
     secao("interface")
-    slide_cartoes(p, "Demonstração", "Três passos no app, ao vivo", [
-        (1, TERRACOTA, "Demonstração", "Usuário #12.369: o gosto, o mapa e as prateleiras"),
-        (2, SALVIA, "Usuário novo", "Cheyenne + cafeteria: o que foi usado e a lista"),
-        (3, MOSTARDA, "Local novo", "Um local real: quem indicar e a decisão"),
-    ], "Demonstração ao vivo de cerca de 2 minutos e meio, com o app aberto antes (streamlit run app.py). Se o app falhar, seguir pelas telas dos próximos slides.")
-    slide_figura(p, "Recomendações em prateleiras", "Cada cartão traz a compatibilidade, a nota prevista e o porquê", RECORTES / "demo_prateleira.png",
-                 "Aba Demonstração, Usuário #12.369", "A aba Demonstração mostra o gosto do usuário em gráficos e as recomendações em prateleiras, no estilo de catálogo: top para você, porque você gostou de X, novidades e bem avaliados perto de você.")
-    slide_figura(p, "Usuário antigo na interface", "Cada local com as barras dos componentes e o porquê", RECORTES / "tela_antigo.png",
-                 None, "Top 10 do Usuário #70.927 com a pontuação, a nota prevista, as barras de conteúdo, escore, localização e popularidade, e a explicação.")
-    slide_figura(p, "Usuário novo na interface", "Tudo é opcional, e a lista nunca fica vazia", RECORTES / "tela_novo.png",
-                 None, "Cheyenne, cafeteria e Wi-Fi: a interface diz o que foi usado e mostra a lista. Com poucos locais, avisa e amplia a busca.")
-    slide_figura(p, "Local novo na interface", "Quem indicar e se o local entra na lista de alguém", RECORTES / "tela_local.png",
-                 None, "Para um local novo real: os 10 usuários mais indicados, com o porquê, e a posição dele na lista de um usuário escolhido.")
+    s = novo_slide(p, "Demonstração", "Três passos no app, ao vivo")
+    largura = (LARGURA - 2 * MARGEM - 0.6) / 3
+    passos = [(TERRACOTA, "Demonstração", "Usuário #12.369: o gosto, o mapa e as prateleiras"),
+              (SALVIA, "Usuário novo", "Cheyenne + cafeteria: o que foi usado e a lista"),
+              (MOSTARDA, "Local novo", "Um local real: quem indicar e a decisão")]
+    for k, (cor, nome, descricao) in enumerate(passos):
+        x = MARGEM + k * (largura + 0.3)
+        cartao(s, x, TOPO_CARTAO, largura, 1.75)
+        circulo(s, x + 0.3, TOPO_CARTAO + 0.3, k + 1, cor, d=0.55)
+        texto(s, x + 1.0, TOPO_CARTAO + 0.35, largura - 1.2, 0.45, nome, tamanho=18, negrito=True, fonte=FONTE_TITULO, espaco=0)
+        texto(s, x + 0.3, TOPO_CARTAO + 1.0, largura - 0.6, 0.7, descricao, tamanho=15, espaco=0)
+    y = TOPO_CARTAO + 2.05
+    cartao(s, MARGEM, y, LARGURA - 2 * MARGEM, BASE_CARTAO - y)
+    imagem(s, RECORTES / "demo_prateleira.png", MARGEM + 0.35, y + 0.25, LARGURA - 2 * MARGEM - 0.7, BASE_CARTAO - y - 0.5)
+    notas(s, "Demonstração ao vivo de cerca de 2 minutos e meio, com o app aberto antes (streamlit run app.py). Embaixo, a aba Demonstração: as recomendações em prateleiras, cada cartão com a compatibilidade, a nota prevista e o porquê. "
+             "Se o app falhar, seguir pelas telas dos próximos slides.")
+    for arquivo, titulo, mensagem, itens, fala in [
+        ("tela_antigo.png", "Usuário antigo na interface", "O top 10 com o porquê de cada local",
+         [(None, "Pontuação e nota prevista", TERRACOTA), (None, "Barras dos quatro componentes", SALVIA), (None, "\"Porque você gostou de X\"", MOSTARDA)],
+         "Top 10 do Usuário #70.927, com a pontuação, a nota prevista, as barras de conteúdo, escore, localização e popularidade, e a explicação."),
+        ("tela_novo.png", "Usuário novo na interface", "Tudo é opcional, e a lista nunca fica vazia",
+         [(None, "Cidade, preço, categorias, atributos e um local de exemplo", TERRACOTA), (None, "Mostra o que foi usado", SALVIA), (None, "Avisa e amplia a busca quando faltam locais", MOSTARDA)],
+         "Cheyenne, cafeteria e Wi-Fi: a interface diz o que foi usado e mostra a lista."),
+        ("tela_local.png", "Local novo na interface", "Quem indicar e se o local entra na lista de alguém",
+         [(None, "Os 10 usuários mais indicados, com o porquê", TERRACOTA), (None, "A posição do local na lista de um usuário", SALVIA), (None, "A decisão: recomendar ou não", MOSTARDA)],
+         "Para um local novo real: os usuários mais indicados e a posição dele na lista de um usuário escolhido."),
+    ]:
+        slide_tela(p, titulo, mensagem, RECORTES / arquivo, itens, fala)
 
 
 # ---------------------------------------------------------------- 9. Conclusões
@@ -732,13 +869,10 @@ def apendice(p):
     tracos(s, 0.75, 6.69)
     notas(s, "Slides de apoio para as perguntas.")
 
-    slide_numeros(p, "O que os dados mostraram", "As análises que apoiam a técnica", [
-        ("4", "locais em comum com o 20º vizinho de um usuário, mesmo no 5-core", TERRACOTA),
-        ("11,5%", "da variância da nota explicada só pelo local", SALVIA),
-        ("75%", "das avaliações de uma pessoa na cidade principal dela", MOSTARDA),
-    ], "Vizinhos por usuário têm pouquíssima sobreposição; o local explica parte da nota (escore); as pessoas ficam na própria cidade (localização).")
     slide_figura(p, "Vizinhos por conteúdo", "Os 5 locais mais parecidos são do mesmo tipo", GRAFICOS / "teoria_vizinhos.png", None,
                  "Os vizinhos de uma pizzaria, de um café e de um bar, pelo cosseno. O cosseno mede o tipo de lugar, não a qualidade.")
+    slide_figura(p, "Avaliações por mês", "Julho tem 2 vezes o movimento de fevereiro", GRAFICOS / "base_por_mes.png", None,
+                 "De 2017 a 2019; 3,29 vezes nas cidades turísticas. Por isso a validação cobre um ano inteiro.")
     slide_figura(p, "Avaliações por ano", "A pandemia corta a série em 2020", GRAFICOS / "base_por_ano.png", None,
                  "As avaliações caem de 9.357 em fevereiro de 2020 para 906 em abril, e a coleta rareia em 2021.")
     slide_numeros(p, "Estabilidade", "A conversão cai à metade depois do 1º ano do teste", [

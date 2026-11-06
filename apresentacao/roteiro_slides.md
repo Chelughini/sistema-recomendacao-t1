@@ -235,3 +235,19 @@ A pedido da usuária, um assunto e um visual por slide, com no máximo duas linh
 ## Revisão de 2026-11-05: slides do apêndice na apresentação
 
 Seis slides passaram do apêndice para as seções, por cobrirem itens do enunciado: **avaliações por mês** (base, depois de "Cidades em ilhas"), **escore bayesiano na base** (teoria, depois do passo 4), **pesos do usuário novo** e **pesos do local novo** (estimação, depois da ablação), **curvas ROC** e **previsão de nota** (performance, depois de "Local novo"). São 47 slides principais (cerca de 17 segundos cada) e 8 de apêndice: avaliações por ano, o que os dados mostraram, vizinhos por conteúdo, estabilidade e as três telas inteiras.
+
+## Revisão de 2026-11-06: reorganização estratégica
+
+Regras: nenhum gráfico sozinho (todo gráfico vem com 2 ou 3 leituras ao lado) e juntar no mesmo slide o que forma um único argumento. São 36 slides principais (cerca de 22 segundos cada em 15 minutos) e 8 de apêndice:
+
+- **1–2.** Capa · roteiro.
+- **3. Sistema:** os três cenários e o fluxo de decisão.
+- **4–8. Base:** números · notas · histórico e concentração · categorias · mapa.
+- **9–18. Teoria:** técnica e os números das análises · as 4 perguntas e a fórmula · passo 1 e TF-IDF · passo 2 (tabela e perfil da Ana) · perfil real · cosseno · escore (exemplos e gráfico) · perto e conhecido · a soma · os três cenários.
+- **19–20. Tratamento:** duplicados e ausentes · o que entra no vetor.
+- **21–22. Treino e teste:** divisão no tempo (com a sazonalidade) · quem é medido.
+- **23–26. Estimação:** o que foi estimado e os pesos · escolha dos pesos · ablação · pesos do usuário novo e do local novo.
+- **27–31. Performance:** métricas · usuário antigo · usuário novo · local novo · curvas ROC e previsão de nota.
+- **32–35. Interface:** demonstração com a prateleira · as três telas.
+- **36.** Conclusões.
+- **Apêndice:** avaliações por mês e por ano · vizinhos por conteúdo · estabilidade · telas inteiras.
