@@ -3,7 +3,13 @@ meta-Wyoming.json
 review-Wyoming.json
 
 # Dados tratados: têm identificadores de usuários e comentários, e os notebooks os regeneram.
-data/
+# Só a lista de locais novos (ids de locais, sem usuários) fica no git, porque o app a lê no deploy.
+data/*
+!data/processed/
+data/processed/*
+!data/processed/conjuntos/
+data/processed/conjuntos/*
+!data/processed/conjuntos/locais_novos.parquet
 
 # Arquivos gerados pelo Python e pelas ferramentas
 __pycache__/
@@ -11,8 +17,8 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 
-# Modelos ajustados: guardam o treino, com identificadores de usuários, e são regenerados pelo notebook 03.
-modelos/*.joblib
+# Modelos ajustados: ficam no git, comprimidos (cerca de 25 MB cada), porque o app no Streamlit Cloud os lê.
+# Eles guardam o treino, com identificadores de usuários: o repositório tem de continuar privado.
 
 # Recortes das telas, regenerados por scripts/gerar_ppt.py.
 apresentacao/imagens/
